@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# 환경설정
+#application.yml 이후 mysql 비번 넣을 때 추가하기.
+
+
+# 기타
+*.class
+*.db
