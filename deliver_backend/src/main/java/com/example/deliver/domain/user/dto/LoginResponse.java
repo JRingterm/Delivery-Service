@@ -1,0 +1,28 @@
+package com.example.deliver.domain.user.dto;
+
+import com.example.deliver.domain.user.entity.User;
+import com.example.deliver.domain.user.entity.UserRole;
+
+public record LoginResponse(
+        Long id,
+        String email,
+        String nickname,
+        UserRole role,
+        String tokenType,
+        String accessToken,
+        long expiresIn,
+        String message
+) {
+    public static LoginResponse of(User user, String accessToken, long expiresIn) {
+        return new LoginResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getRole(),
+                "Bearer",
+                accessToken,
+                expiresIn,
+                "로그인에 성공했습니다."
+        );
+    }
+}
