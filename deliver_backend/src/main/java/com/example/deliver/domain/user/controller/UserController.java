@@ -22,6 +22,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/signup")
+    //@RequestBody로 JSON -> SignUpRequest 바꿈. @Valid로 DTO에 붙은 검증조건 확인.
     public ResponseEntity<SignUpResponse> signUp(@Valid @RequestBody SignUpRequest request) {
         SignUpResponse response = userService.signUp(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

@@ -10,7 +10,7 @@ import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider { //토큰 생성과 검증 담당.
 
     private final SecretKey signingKey;
     private final long accessTokenExpirationMs;
@@ -20,18 +20,20 @@ public class JwtTokenProvider {
         this.accessTokenExpirationMs = jwtProperties.accessTokenExpirationMs();
     }
 
+    //로그인 성공 후 호출되는 메소드. 토큰을 생성한다.
     public String createAccessToken(String email) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
-                .subject(email)
-                .issuedAt(now)
-                .expiration(expiry)
+                .subject(email) //"이 이메일을 가진 사용자가 로그인 했다" 는 정보를 담고있다.
+                .issuedAt(now) //발급시간
+                .expiration(expiry) //만료시간
                 .signWith(signingKey)
                 .compact();
     }
 
+    //토큰에서 이메일 꺼내기
     public String getEmail(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(signingKey)
@@ -42,6 +44,7 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
+    //토큰이 유효한지 검증. 위조되었는지, 만료되었는지
     public boolean validateToken(String token) {
         try {
             Jwts.parser()

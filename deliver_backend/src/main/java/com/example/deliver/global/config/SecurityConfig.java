@@ -16,22 +16,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class SecurityConfig { //보안 규칙을 정하는 클래스. Authorization(인가)규칙을 정한다.
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) //REST API 테스트를 쉽게 하기위해 CSRF 보호를 끈다.
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) //STATELESS. 세션 안쓰고 JWT로만 인증하겠다.
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/signup", "/api/users/login", "/h2-console/**").permitAll() //permitAll()로 열어두면 권한없이도 접속 가능.
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated() //나머지는 인증(토큰) 필요.
                 )
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable) //브라우저 기본 로그인 창을 사용하지 않겠다.
+                .formLogin(AbstractHttpConfigurer::disable) //Spring 기본 로그인 페이지를 사용하지 않겠다.
+                //요청이 들어오면, Spring 기본 인증 필터보다 먼저 내가 만든 JwtAuthenticationFilter를 먼저 실행하라.
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
