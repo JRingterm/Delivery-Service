@@ -42,7 +42,7 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        return SignUpResponse.from(savedUser);
+        return SignUpResponse.from(savedUser);//dto의 정적메소드 호출
     }
 
     //로그인

@@ -5,12 +5,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.HttpStatusAccessDeniedHandler;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -29,6 +32,10 @@ public class SecurityConfig { //보안 규칙을 정하는 클래스. Authorizat
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/signup", "/api/users/login", "/h2-console/**").permitAll() //permitAll()로 열어두면 권한없이도 접속 가능.
                         .anyRequest().authenticated() //나머지는 인증(토큰) 필요.
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)) //Spring Security의 authenticationEntryPoint() -> 인증이 안된 요청이 들어왔을 때, 어떻게 처리할지. 401
+                        .accessDeniedHandler(new HttpStatusAccessDeniedHandler(HttpStatus.FORBIDDEN)) //Spring Security의 accessDeniedHandler() -> 인증은 되었는데 권한이 없는 경우. 403
                 )
                 .httpBasic(AbstractHttpConfigurer::disable) //브라우저 기본 로그인 창을 사용하지 않겠다.
                 .formLogin(AbstractHttpConfigurer::disable) //Spring 기본 로그인 페이지를 사용하지 않겠다.

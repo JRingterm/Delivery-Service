@@ -13,7 +13,7 @@ public record LoginResponse(
         String accessToken,
         long expiresIn,
         String message
-) {
+) {//정적 메소드. 객체생성 없이 클래스 이름으로 호출 가능. Entity -> DTO 변환 책임을 DTO가 갖게 하기 위함.
     public static LoginResponse of(User user, String accessToken, long expiresIn) {
         return new LoginResponse(
                 user.getId(),
