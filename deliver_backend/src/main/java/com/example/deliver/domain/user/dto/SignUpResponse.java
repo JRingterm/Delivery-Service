@@ -10,7 +10,7 @@ public record SignUpResponse(
         String nickname,
         UserRole role
 ) {
-    public static SignUpResponse from(User user) {
+    public static SignUpResponse toResponse(User user) {
         return new SignUpResponse(
                 user.getId(),
                 user.getEmail(),

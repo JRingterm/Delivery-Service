@@ -36,6 +36,8 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    //생성자로 객체 생성하는 방식은 필드의 순서를 기억해야하고, 가독성이 떨어지는 문제가 발생.
+    //따라서 Lombok에서 지원하는 @Builder로 위 문제들을 해결.
     @Builder
     public User(String email, String password, String nickname, UserRole role) {
         this.email = email;

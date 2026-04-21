@@ -42,7 +42,7 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        return SignUpResponse.from(savedUser);//dto의 정적메소드 호출
+        return SignUpResponse.toResponse(savedUser);//dto의 정적메소드 호출
     }
 
     //로그인
@@ -61,7 +61,7 @@ public class UserService {
 
         //JWT 생성
         String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
-        return LoginResponse.of(user, accessToken, jwtTokenProvider.getAccessTokenExpirationMs());
+        return LoginResponse.toResponse(user, accessToken, jwtTokenProvider.getAccessTokenExpirationMs());
     }
 
     //이메일, 닉네임 중복 확인 및 방지. 중복시 409 CONFLICT

@@ -25,6 +25,7 @@ public class StoreController {
 
     private final StoreService storeService;
 
+    //가게 등록
     @PostMapping
     public ResponseEntity<StoreResponse> createStore(
             @Valid @RequestBody StoreCreateRequest request,
@@ -38,11 +39,12 @@ public class StoreController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    //가게 전체 조회
     @GetMapping
     public ResponseEntity<List<StoreResponse>> findStores() {
         return ResponseEntity.ok(storeService.findStores());
     }
-
+    //가게 단건 조회
     @GetMapping("/{id}")
     public ResponseEntity<StoreResponse> findStore(@PathVariable Long id) {
         return ResponseEntity.ok(storeService.findStore(id));

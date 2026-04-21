@@ -9,7 +9,7 @@ public record StoreResponse(
         Long ownerId,
         String ownerNickname
 ) {
-    public static StoreResponse from(Store store) {
+    public static StoreResponse toResponse(Store store) {
         return new StoreResponse(
                 store.getId(),
                 store.getName(),

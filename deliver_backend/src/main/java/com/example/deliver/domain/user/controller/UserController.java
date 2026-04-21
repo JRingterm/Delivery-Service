@@ -21,13 +21,14 @@ public class UserController {
 
     private final UserService userService;
 
+    //회원가입
     @PostMapping("/signup")
     //@RequestBody로 JSON -> Java 객체(SignUpRequest) 변환. @Valid로 DTO에 붙은 검증조건 확인.
     public ResponseEntity<SignUpResponse> signUp(@Valid @RequestBody SignUpRequest request) {
         SignUpResponse response = userService.signUp(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
+    //로그인
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = userService.login(request);
