@@ -50,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { //매 요청
                 String email = jwtTokenProvider.getEmail(token); //토큰으로 사용자 정보 추출 (이메일)
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);//추출한 사용자 정보(이메일)로 사용자 조회.
 
-                //Spring Security가 사용할 인증 객체 생성
+                //Spring Security가 사용할 인증 객체 생성. 여기서 들어간 userDetails를 Controller에서 @AuthentiationPrinipal로 꺼내는 것.
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 

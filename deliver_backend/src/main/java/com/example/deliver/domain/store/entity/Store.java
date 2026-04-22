@@ -31,7 +31,7 @@ public class Store {
     @Column(nullable = false, length = 500)
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY) //필요할 때만 연관 객체를 DB에서 가져오게 하기위해 LAZY 설정. (불필요한 조회 줄이기)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 

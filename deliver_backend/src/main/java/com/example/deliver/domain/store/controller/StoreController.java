@@ -29,7 +29,7 @@ public class StoreController {
     @PostMapping
     public ResponseEntity<StoreResponse> createStore(
             @Valid @RequestBody StoreCreateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal UserDetails userDetails ///현재 로그인한 사용자 정보를 가져오는 어노테이션.
     ) {
         if (userDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
