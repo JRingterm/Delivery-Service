@@ -75,5 +75,10 @@ public class Order { //주문서 전체. (누가? 어느가게에? 총 가격? �
     // DB 저장 시에 OrderItem 쪽의 order_id가 제대로 반영되지 않을 수 있다.
 
     // 따라서 이 둘을 충족시키기 위해, addOrderItem() 같은 메소드를 따로 만들어서,
-    // 양쪽 값을 한번에 맞춰주는 것.
+    // 객체상태와 DB 반영상태 값을 한번에 맞춰주는 것.
+
+    //주문 상태 변경 메소드
+    public void updateStatus(OrderStatus status) {
+        this.status = status;
+    }
 }

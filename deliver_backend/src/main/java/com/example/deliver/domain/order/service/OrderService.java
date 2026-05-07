@@ -116,4 +116,66 @@ public class OrderService {
 
         return OrderResponse.toResponse(order);
     }
+    //Owner 주문 전체 조회
+    @Transactional(readOnly = true)
+    public List<OrderResponse> findOwnerOrders(String ownerEmail) {
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        validateOwnerRole(owner); //Owner인지 확인.
+
+        //Owner가 가진 Store의 주문 목록 가져오기.
+        return orderRepository.findAllByStoreOwnerId(owner.getId()).stream()
+                .map(OrderResponse::toResponse)
+                .toList();
+    }
+    //Owner 주문 단건 조회
+    @Transactional(readOnly = true)
+    public OrderResponse findOwnerOrder(String ownerEmail, Long orderId) {
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        validateOwnerRole(owner);
+
+        //orderId + ownerId로 주문 조회. 따라서 다른 점주의 주문은 보이지 않는다.
+        Order order = orderRepository.findByIdAndStoreOwnerId(orderId, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        return OrderResponse.toResponse(order);
+    }
+    //Owner 주문 수락
+    @Transactional
+    public OrderResponse acceptOrder(String ownerEmail, Long orderId) {
+        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.ACCEPTED);
+    }
+    //Owner 주문 거절
+    @Transactional
+    public OrderResponse rejectOrder(String ownerEmail, Long orderId) {
+        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.REJECTED);
+    }
+
+    private OrderResponse updateOwnerOrderStatus(String ownerEmail, Long orderId, OrderStatus targetStatus) {
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        validateOwnerRole(owner);
+
+        Order order = orderRepository.findByIdAndStoreOwnerId(orderId, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        //order의 상태가 CREATED인지 확인.
+        if (order.getStatus() != OrderStatus.CREATED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 처리된 주문입니다.");
+        }
+        //ACCEPTED 또는 REJECTED로 변경 후 반환.
+        order.updateStatus(targetStatus);
+        return OrderResponse.toResponse(order);
+    }
+
+    //Owner 검증 메소드. 중복해서 사용하므로 따로 메소드로 분리.
+    private void validateOwnerRole(User owner) {
+        if (owner.getRole() != UserRole.OWNER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "OWNER만 주문을 관리할 수 있습니다.");
+        }
+    }
 }
