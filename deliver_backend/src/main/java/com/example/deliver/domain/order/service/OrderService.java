@@ -145,29 +145,85 @@ public class OrderService {
     }
     //Owner 주문 수락
     @Transactional
-    public OrderResponse acceptOrder(String ownerEmail, Long orderId) {
-        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.ACCEPTED);
+    public OrderResponse acceptOrder(String ownerEmail, Long orderId) { //CREATED 상태만 ACCEPTED로 변경 가능.
+        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.CREATED, OrderStatus.ACCEPTED);
     }
     //Owner 주문 거절
     @Transactional
-    public OrderResponse rejectOrder(String ownerEmail, Long orderId) {
-        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.REJECTED);
+    public OrderResponse rejectOrder(String ownerEmail, Long orderId) { //CREATED 상태만 REJECTED로 변경 가능.
+        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.CREATED, OrderStatus.REJECTED);
+    }
+    //Owner 조리 시작
+    @Transactional
+    public OrderResponse startCooking(String ownerEmail, Long orderId) { //ACCEPTED 상태만 COOKING 가능.
+        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.ACCEPTED, OrderStatus.COOKING);
+    }
+    //Owner 배달 준비 완료
+    @Transactional
+    public OrderResponse markReadyForDelivery(String ownerEmail, Long orderId) { //COOKING 상태만 READY_FOR_DELIVERY 가능.
+        return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.COOKING, OrderStatus.READY_FOR_DELIVERY);
+    }
+    //Rider 픽업
+    @Transactional
+    public OrderResponse pickupOrder(String riderEmail, Long orderId) {
+        User rider = userRepository.findByEmail(riderEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        //Rider인지 확인.
+        if (rider.getRole() != UserRole.RIDER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "RIDER만 배달 상태를 변경할 수 있습니다.");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+        //READY_FOR_DELIVERY 상태인 주문만 픽업 가능.
+        if (order.getStatus() != OrderStatus.READY_FOR_DELIVERY) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "READY_FOR_DELIVERY 상태 주문만 픽업할 수 있습니다.");
+        }
+
+        order.updateStatus(OrderStatus.DELIVERING);
+        return OrderResponse.toResponse(order);
+    }
+    //Rider 배달 완료
+    @Transactional
+    public OrderResponse completeDelivery(String riderEmail, Long orderId) {
+        User rider = userRepository.findByEmail(riderEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        //Rider인지 확인.
+        if (rider.getRole() != UserRole.RIDER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "RIDER만 배달 상태를 변경할 수 있습니다.");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        //DELIVERING 상태인 주문만 배달 완료 가능.
+        if (order.getStatus() != OrderStatus.DELIVERING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DELIVERING 상태 주문만 배달 완료할 수 있습니다.");
+        }
+
+        order.updateStatus(OrderStatus.COMPLETED);
+        return OrderResponse.toResponse(order);
     }
 
-    private OrderResponse updateOwnerOrderStatus(String ownerEmail, Long orderId, OrderStatus targetStatus) {
+    //각 주문 상태에서 다음 단계로 갈때마다 검사해줘야 하는 것을 하나로 통합.
+    private OrderResponse updateOwnerOrderStatus(String ownerEmail, Long orderId, OrderStatus expectedStatus, OrderStatus targetStatus) {
         User owner = userRepository.findByEmail(ownerEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         validateOwnerRole(owner);
 
+        //Owner 가게의 주문인지 확인.
         Order order = orderRepository.findByIdAndStoreOwnerId(orderId, owner.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        //order의 상태가 CREATED인지 확인.
-        if (order.getStatus() != OrderStatus.CREATED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 처리된 주문입니다.");
+        //Order의 현재 상태 검사. ACCEPTED 상태가 아닌데 COOKING을 요청하는 등. 잘못된 상태변경을 잡아냄.
+        if (order.getStatus() != expectedStatus) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 주문 상태 변경 요청입니다.");
         }
-        //ACCEPTED 또는 REJECTED로 변경 후 반환.
+
+        //상태 변경 후 반환.
         order.updateStatus(targetStatus);
         return OrderResponse.toResponse(order);
     }

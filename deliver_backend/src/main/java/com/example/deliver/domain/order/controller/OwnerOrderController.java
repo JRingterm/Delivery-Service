@@ -49,4 +49,20 @@ public class OwnerOrderController { //점주(Owner) 전용
     ) {
         return ResponseEntity.ok(orderService.rejectOrder(userDetails.getUsername(), orderId));
     }
+    //조리 시작
+    @PatchMapping("/{orderId}/cooking")
+    public ResponseEntity<OrderResponse> startCooking(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long orderId
+    ) {
+        return ResponseEntity.ok(orderService.startCooking(userDetails.getUsername(), orderId));
+    }
+    //배달 준비 완료
+    @PatchMapping("/{orderId}/ready")
+    public ResponseEntity<OrderResponse> markReadyForDelivery(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long orderId
+    ) {
+        return ResponseEntity.ok(orderService.markReadyForDelivery(userDetails.getUsername(), orderId));
+    }
 }
