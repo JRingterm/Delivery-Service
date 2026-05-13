@@ -2,12 +2,15 @@ package com.example.deliver.domain.user.service;
 
 import com.example.deliver.domain.user.dto.LoginRequest;
 import com.example.deliver.domain.user.dto.LoginResponse;
+import com.example.deliver.domain.user.dto.LogoutResponse;
 import com.example.deliver.domain.user.dto.SignUpRequest;
 import com.example.deliver.domain.user.dto.SignUpResponse;
+import com.example.deliver.domain.user.dto.TokenReissueRequest;
 import com.example.deliver.domain.user.entity.User;
 import com.example.deliver.domain.user.entity.UserRole;
 import com.example.deliver.domain.user.repository.UserRepository;
 import com.example.deliver.global.security.jwt.JwtTokenProvider;
+import com.example.deliver.global.security.jwt.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +29,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     //회원가입
     @Transactional
@@ -59,11 +63,58 @@ public class UserService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."));
 
-        //JWT 생성
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
-        return LoginResponse.toResponse(user, accessToken, jwtTokenProvider.getAccessTokenExpirationMs());
+        return issueTokens(user);
     }
 
+    //Refresh 토큰으로 새 토큰을 발급하는 메소드.
+    @Transactional
+    public LoginResponse reissue(TokenReissueRequest request) {
+        //Refresh 토큰 자체 검증.
+        if (!jwtTokenProvider.validateToken(request.refreshToken())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다.");
+        }
+
+        //토큰에서 이메일 추출
+        String email = jwtTokenProvider.getEmail(request.refreshToken());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        //Redis에 저장된 Refresh 토큰과 비교.
+        if (!refreshTokenService.isRefreshTokenMatched(email, request.refreshToken())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "저장된 Refresh Token과 일치하지 않습니다.");
+        }
+
+        return issueTokens(user);
+    }
+
+    //로그아웃
+    @Transactional
+    public LogoutResponse logout(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        //Redis에 저장된 Refresh 토큰 삭제.
+        refreshTokenService.deleteRefreshToken(user.getEmail());
+
+        return new LogoutResponse("로그아웃이 완료되었습니다.");
+    }
+
+    //JWT 생성(Access, Refresh)
+    private LoginResponse issueTokens(User user) {
+        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+
+        //Refresh 토큰은 Redis에 저장.
+        refreshTokenService.saveRefreshToken(user.getEmail(), refreshToken, jwtTokenProvider.getRefreshTokenExpirationMs());
+
+        return LoginResponse.toResponse(
+                user,
+                accessToken,
+                refreshToken,
+                jwtTokenProvider.getAccessTokenExpirationMs(),
+                jwtTokenProvider.getRefreshTokenExpirationMs()
+        );
+    }
     //이메일, 닉네임 중복 확인 및 방지. 중복시 409 CONFLICT
     private void validateDuplicate(SignUpRequest request) {
         if (userRepository.existsByEmail(request.email())) {

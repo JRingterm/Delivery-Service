@@ -45,7 +45,7 @@ public class SecurityConfig { //보안 규칙을 정하는 클래스. Authorizat
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        .requestMatchers("/api/users/signup", "/api/users/login", "/h2-console/**", "/error").permitAll() //permitAll()로 열어두면 권한없이도 접속 가능.
+                        .requestMatchers("/api/users/signup", "/api/users/login", "/api/users/reissue", "/h2-console/**", "/error").permitAll() //permitAll()로 열어두면 권한없이도 접속 가능.
                         .requestMatchers(HttpMethod.GET, "/api/stores/**").permitAll() //가게의 조회나 메뉴 조회는 인증없어도 가능.
                         .anyRequest().authenticated() //나머지 요청은 인증(토큰) 필요.
                 )

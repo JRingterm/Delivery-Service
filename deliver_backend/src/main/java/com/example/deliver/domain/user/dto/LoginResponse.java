@@ -11,10 +11,18 @@ public record LoginResponse(
         UserRole role,
         String tokenType,
         String accessToken,
-        long expiresIn,
+        String refreshToken,
+        long accessTokenExpiresIn,
+        long refreshTokenExpiresIn,
         String message
 ) {//정적 메소드. 객체생성 없이 클래스 이름으로 호출 가능. Entity -> DTO 변환 책임을 DTO가 갖게 하기 위함.
-    public static LoginResponse toResponse(User user, String accessToken, long expiresIn) {
+    public static LoginResponse toResponse(
+            User user,
+            String accessToken,
+            String refreshToken,
+            long accessTokenExpiresIn,
+            long refreshTokenExpiresIn
+    ) {
         return new LoginResponse(
                 user.getId(),
                 user.getEmail(),
@@ -22,7 +30,9 @@ public record LoginResponse(
                 user.getRole(),
                 "Bearer",
                 accessToken,
-                expiresIn,
+                refreshToken,
+                accessTokenExpiresIn,
+                refreshTokenExpiresIn,
                 "로그인에 성공했습니다."
         );
     }

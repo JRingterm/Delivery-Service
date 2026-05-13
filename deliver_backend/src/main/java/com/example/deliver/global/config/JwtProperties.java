@@ -14,6 +14,9 @@ public record JwtProperties(
         String secret,
 
         @Min(value = 60000, message = "JWT access token expiration must be at least 60,000ms.")
-        long accessTokenExpirationMs
+        long accessTokenExpirationMs,
+
+        @Min(value = 60000, message = "JWT refresh token expiration must be at least 60,000ms.")
+        long refreshTokenExpirationMs
 ) {
 }

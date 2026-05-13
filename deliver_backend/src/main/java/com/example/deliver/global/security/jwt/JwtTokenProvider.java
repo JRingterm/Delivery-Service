@@ -14,26 +14,24 @@ public class JwtTokenProvider { //토큰 생성과 검증 담당.
 
     private final SecretKey signingKey;
     private final long accessTokenExpirationMs;
+    private final long refreshTokenExpirationMs;
 
     public JwtTokenProvider(JwtProperties jwtProperties) {
         this.signingKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpirationMs = jwtProperties.accessTokenExpirationMs();
+        this.refreshTokenExpirationMs = jwtProperties.refreshTokenExpirationMs();
     }
 
-    //로그인 성공 후 호출되는 메소드. 토큰을 생성한다.
+    //API 요청 인증용 Access 토큰
     public String createAccessToken(String email) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + accessTokenExpirationMs);
-
-        return Jwts.builder()
-                .subject(email) //"이 이메일을 가진 사용자가 로그인 했다" 는 정보를 담고있다.
-                .issuedAt(now) //발급시간
-                .expiration(expiry) //만료시간
-                .signWith(signingKey)
-                .compact();
+        return createToken(email, accessTokenExpirationMs);
+    }
+    //Access 토큰 재발급용 Refresh 토큰
+    public String createRefreshToken(String email) {
+        return createToken(email, refreshTokenExpirationMs);
     }
 
-    //토큰에서 이메일 꺼내기
+    //토큰에서 이메일 꺼내기.
     public String getEmail(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(signingKey)
@@ -60,4 +58,26 @@ public class JwtTokenProvider { //토큰 생성과 검증 담당.
     public long getAccessTokenExpirationMs() {
         return accessTokenExpirationMs;
     }
+
+    public long getRefreshTokenExpirationMs() {
+        return refreshTokenExpirationMs;
+    }
+
+    //로그인 성공 후 호출되는 메소드. 토큰을 생성한다. (Access, Refresh)
+    public String createToken(String email, long expirationMs) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expirationMs);
+
+        return Jwts.builder()
+                .subject(email) //"이 이메일을 가진 사용자가 로그인 했다" 는 정보를 담고있다.
+                .issuedAt(now) //발급시간
+                .expiration(expiry) //만료시간
+                .signWith(signingKey)
+                .compact();
+    }
+
+
+
+
+
 }
