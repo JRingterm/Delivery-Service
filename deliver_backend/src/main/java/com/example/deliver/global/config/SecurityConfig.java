@@ -37,6 +37,14 @@ public class SecurityConfig { //보안 규칙을 정하는 클래스. Authorizat
                         //따라서 Security를 넘지 못한 요청이라서 403이 아닌 401로 출력이된 것.
                         //로그 확인해가며 Security 넘어서 Controller, Service까지 들어온거 확인해서 403이 나와야할 것은 분명했는데, 이런 경우가 있었네...
 
+                        .requestMatchers( //Swagger를 위한 경로 열어두기.
+                                "/swagger-ui/**", //Swagger 화면
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**", //Swagger가 읽을 OpenAPI 문서 JSON
+                                "/v3/api-docs",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
                         .requestMatchers("/api/users/signup", "/api/users/login", "/h2-console/**", "/error").permitAll() //permitAll()로 열어두면 권한없이도 접속 가능.
                         .requestMatchers(HttpMethod.GET, "/api/stores/**").permitAll() //가게의 조회나 메뉴 조회는 인증없어도 가능.
                         .anyRequest().authenticated() //나머지 요청은 인증(토큰) 필요.

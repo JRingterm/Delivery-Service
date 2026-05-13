@@ -1,4 +1,3 @@
-
 package com.example.deliver.global.exception;
 
 public record ErrorResponse( //공통 에러 포멧. 아래 형식으로 에러 응답이 출력되도록 한다.
