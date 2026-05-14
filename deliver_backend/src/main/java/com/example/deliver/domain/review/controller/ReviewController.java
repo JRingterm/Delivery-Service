@@ -2,6 +2,7 @@ package com.example.deliver.domain.review.controller;
 
 import com.example.deliver.domain.review.dto.ReviewCreateRequest;
 import com.example.deliver.domain.review.dto.ReviewResponse;
+import com.example.deliver.domain.review.dto.ReviewSearchCondition;
 import com.example.deliver.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -12,12 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,7 +39,11 @@ public class ReviewController {
     }
     //가게 리뷰 조회. Pageable 추가. Spring이 요청 파라미터를 자동으로 변경 ex>GET /api/stores/1/reviews?page=0&size=5
     @GetMapping("/api/stores/{storeId}/reviews")
-    public ResponseEntity<Page<ReviewResponse>> findStoreReviews(@PathVariable Long storeId, Pageable pageable) {
-        return ResponseEntity.ok(reviewService.findStoreReviews(storeId, pageable));
+    public ResponseEntity<Page<ReviewResponse>> findStoreReviews(
+            @PathVariable Long storeId,
+            @ModelAttribute ReviewSearchCondition condition, //Querydsl 검색 조건 받기.
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(reviewService.findStoreReviews(storeId, condition, pageable));
     }
 }

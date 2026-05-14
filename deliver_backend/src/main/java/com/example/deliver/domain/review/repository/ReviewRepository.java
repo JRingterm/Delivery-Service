@@ -7,7 +7,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ReviewRepository extends JpaRepository<Review, Long> {
+//기존에는 JpaRepository만 상속했는데, 이제 Querydsl을 위한 ReviewRepositoryCustom도 같이 상속.
+//이제 JPA 기능과 QueryDSL 커스텀 기능을 둘 다 사용할 수 있다.
+public interface ReviewRepository extends JpaRepository<Review, Long>, ReviewRepositoryCustom {
 
     //리뷰 중복 작성 방지(1주문 1리뷰)
     boolean existsByOrderId(Long orderId);

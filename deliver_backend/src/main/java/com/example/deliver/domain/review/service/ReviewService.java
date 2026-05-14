@@ -5,6 +5,7 @@ import com.example.deliver.domain.order.entity.OrderStatus;
 import com.example.deliver.domain.order.repository.OrderRepository;
 import com.example.deliver.domain.review.dto.ReviewCreateRequest;
 import com.example.deliver.domain.review.dto.ReviewResponse;
+import com.example.deliver.domain.review.dto.ReviewSearchCondition;
 import com.example.deliver.domain.review.entity.Review;
 import com.example.deliver.domain.review.repository.ReviewRepository;
 import com.example.deliver.domain.store.repository.StoreRepository;
@@ -77,15 +78,16 @@ public class ReviewService {
                 .map(ReviewResponse::toResponse)
                 .toList();
     }
-    //가게 리뷰 목록 조회.
+    //가게 리뷰 목록 조회. 검색 조건과 페이징 정보를 받도록 함.
     @Transactional(readOnly = true)
-    public Page<ReviewResponse> findStoreReviews(Long storeId, Pageable pageable) {
+    public Page<ReviewResponse> findStoreReviews(Long storeId, ReviewSearchCondition condition, Pageable pageable) {
         if (!storeRepository.existsById(storeId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다.");
         }
 
+        //QueryDSL 결과를 DTO로 변환한다.
         //Page<Review>를 Page<ReviewResponse>로 변환(Entity -> DTO). map() 사용.
-        return reviewRepository.findAllByStoreId(storeId, pageable)
+        return reviewRepository.searchStoreReviews(storeId, condition, pageable)
                 .map(ReviewResponse::toResponse);
     }
 }

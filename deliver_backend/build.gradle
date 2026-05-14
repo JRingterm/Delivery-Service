@@ -27,12 +27,17 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web' //webmvc 말고 web 쓰기.
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'//swagger + OpenAPI
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta' //querydsl
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'
+	//querydsl
+	annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
+	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
