@@ -13,6 +13,8 @@ import com.example.deliver.domain.user.entity.UserRole;
 import com.example.deliver.domain.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,15 +77,15 @@ public class ReviewService {
                 .map(ReviewResponse::toResponse)
                 .toList();
     }
-    //가게 리뷰 목록 조회
+    //가게 리뷰 목록 조회.
     @Transactional(readOnly = true)
-    public List<ReviewResponse> findStoreReviews(Long storeId) {
+    public Page<ReviewResponse> findStoreReviews(Long storeId, Pageable pageable) {
         if (!storeRepository.existsById(storeId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다.");
         }
 
-        return reviewRepository.findAllByStoreId(storeId).stream()
-                .map(ReviewResponse::toResponse)
-                .toList();
+        //Page<Review>를 Page<ReviewResponse>로 변환(Entity -> DTO). map() 사용.
+        return reviewRepository.findAllByStoreId(storeId, pageable)
+                .map(ReviewResponse::toResponse);
     }
 }

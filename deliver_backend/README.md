@@ -118,15 +118,50 @@ CREATED
 
 ## 🔐 인증 / 인가
 
-JWT 기반 인증 방식을 사용합니다.
+JWT + Redis 기반 인증 방식을 사용합니다.
 
 ### 구현 내용
 
 - JWT Access Token 발급
+- JWT Refresh Token 발급
+- Redis 기반 Refresh Token 저장 및 관리
+- Access Token 재발급 API 구현
+- 로그아웃 시 Refresh Token 삭제
 - JWT 인증 필터 구현
 - Spring Security Stateless 설정
+- Swagger JWT 인증 연동
 - 인증 실패 → 401 Unauthorized
 - 권한 부족 → 403 Forbidden
+
+
+### 인증 흐름
+
+#### 로그인 성공 시
+
+```text
+- Access Token 발급
+- Refresh Token 발급
+- Refresh Token Redis 저장
+```
+#### Access Token 만료 시:
+```text
+Refresh Token 검증
+→ Redis 저장값 비교
+→ 새 Access Token 발급
+→ 새 Refresh Token 발급 및 Redis 갱신
+```
+#### 로그아웃 시:
+```text
+Redis Refresh Token 삭제
+→ 재발급 차단
+```
+
+### Redis 사용 목적
+- Refresh Token 저장
+- 로그인 상태 관리
+- 로그아웃 처리
+- Refresh Token 재사용 방지
+- 최신 Refresh Token만 허용
 
 ### 주요 권한 처리
 
@@ -135,6 +170,10 @@ JWT 기반 인증 방식을 사용합니다.
 - RIDER만 배달 상태 변경 가능
 - 본인 주문만 조회 가능
 - 자기 가게 주문만 관리 가능
+
+
+
+
 
 ---
 
@@ -333,9 +372,6 @@ PATCH /api/rider/orders/{orderId}/complete
 - 리뷰 기능
 - 라이더 배정 시스템
 - 결제 기능
-- 공통 예외 처리 (`@ControllerAdvice`)
-- Refresh Token + Redis
-- Swagger/OpenAPI 문서화
 - Docker 적용
 - AWS 배포
 

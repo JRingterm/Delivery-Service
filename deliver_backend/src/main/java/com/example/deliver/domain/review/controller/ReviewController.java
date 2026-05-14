@@ -6,6 +6,8 @@ import com.example.deliver.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,9 +41,9 @@ public class ReviewController {
     public ResponseEntity<List<ReviewResponse>> findMyReviews(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(reviewService.findMyReviews(userDetails.getUsername()));
     }
-    //가게 리뷰 조회
+    //가게 리뷰 조회. Pageable 추가. Spring이 요청 파라미터를 자동으로 변경 ex>GET /api/stores/1/reviews?page=0&size=5
     @GetMapping("/api/stores/{storeId}/reviews")
-    public ResponseEntity<List<ReviewResponse>> findStoreReviews(@PathVariable Long storeId) {
-        return ResponseEntity.ok(reviewService.findStoreReviews(storeId));
+    public ResponseEntity<Page<ReviewResponse>> findStoreReviews(@PathVariable Long storeId, Pageable pageable) {
+        return ResponseEntity.ok(reviewService.findStoreReviews(storeId, pageable));
     }
 }
