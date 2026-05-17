@@ -6,7 +6,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface OrderRepository extends JpaRepository<Order, Long> {
+//Querydsl 적용.
+public interface OrderRepository extends JpaRepository<Order, Long>, OrderRepositoryCustom {
 
     //@EntityGraph를 사용하여, 조회시 연관 객체를 미리 가져오도록 한다. (기본 LAZY 로딩 이므로, N+1 문제보완)
     //모든 주문 내역

@@ -5,6 +5,7 @@ import com.example.deliver.domain.menu.repository.MenuRepository;
 import com.example.deliver.domain.order.dto.OrderCreateRequest;
 import com.example.deliver.domain.order.dto.OrderItemRequest;
 import com.example.deliver.domain.order.dto.OrderResponse;
+import com.example.deliver.domain.order.dto.OrderSearchCondition;
 import com.example.deliver.domain.order.entity.Order;
 import com.example.deliver.domain.order.entity.OrderItem;
 import com.example.deliver.domain.order.entity.OrderStatus;
@@ -14,9 +15,12 @@ import com.example.deliver.domain.store.repository.StoreRepository;
 import com.example.deliver.domain.user.entity.User;
 import com.example.deliver.domain.user.entity.UserRole;
 import com.example.deliver.domain.user.repository.UserRepository;
+
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,18 +120,17 @@ public class OrderService {
 
         return OrderResponse.toResponse(order);
     }
-    //Owner 주문 전체 조회
+    //Owner 주문 전체 조회, Querydsl 적용으로 인한 파라미터 변경
     @Transactional(readOnly = true)
-    public List<OrderResponse> findOwnerOrders(String ownerEmail) {
+    public Page<OrderResponse> findOwnerOrders(String ownerEmail, OrderSearchCondition condition, Pageable pageable) {
         User owner = userRepository.findByEmail(ownerEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         validateOwnerRole(owner); //Owner인지 확인.
 
-        //Owner가 가진 Store의 주문 목록 가져오기.
-        return orderRepository.findAllByStoreOwnerId(owner.getId()).stream()
-                .map(OrderResponse::toResponse)
-                .toList();
+        //Owner가 가진 Store의 주문 목록 가져오기. (Querydsl 검색 실행). Page<Order>를 Page<OrderResponse>로 변경.
+        return orderRepository.searchOwnerOrders(owner.getId(), condition, pageable)
+                .map(OrderResponse::toResponse);
     }
     //Owner 주문 단건 조회
     @Transactional(readOnly = true)
