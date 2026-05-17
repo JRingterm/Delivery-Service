@@ -99,15 +99,14 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
             return orders;
         }
 
-        //정렬 조건이 있다면, 읽어서 Querydsl 정렬 객체로 바꾼다.
-        PathBuilder<Review> pathBuilder = new PathBuilder<>(Review.class, "review");
-
         for (Sort.Order sortOrder : pageable.getSort()) {
-            Order direction = sortOrder.isAscending() ? Order.ASC : Order.DESC;
-            orders.add(new OrderSpecifier<>(
-                    direction,
-                    pathBuilder.getComparable(sortOrder.getProperty(), Comparable.class)
-            ));
+            boolean isAsc = sortOrder.isAscending();
+
+            switch (sortOrder.getProperty()) {
+                case "id" -> orders.add(isAsc ? review.id.asc() : review.id.desc());
+                case "rating" -> orders.add(isAsc ? review.rating.asc() : review.rating.desc());
+                default -> orders.add(review.id.desc()); //매핑된 것 외의 문자열이 들어오면 id,desc 정렬.
+            }
         }
 
         return orders;

@@ -83,16 +83,17 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
             return orders;
         }
 
-        PathBuilder<Order> pathBuilder = new PathBuilder<>(Order.class, "order");
-
+        //PathBuilder 사용 시, 오류발생.
+        //허용된 필드만 명시적으로 정렬하는 방식으로 변경.
         for (Sort.Order sortOrder : pageable.getSort()) {
-            com.querydsl.core.types.Order direction = sortOrder.isAscending()
-                    ? com.querydsl.core.types.Order.ASC
-                    : com.querydsl.core.types.Order.DESC;
-            orders.add(new OrderSpecifier<>(
-                    direction,
-                    pathBuilder.getComparable(sortOrder.getProperty(), Comparable.class)
-            ));
+            boolean ascending = sortOrder.isAscending();
+
+            switch (sortOrder.getProperty()) {
+                case "id" -> orders.add(ascending ? order.id.asc() : order.id.desc()); //문자열이 들어오면 직접 매핑. "id" -> order.id
+                case "totalPrice" -> orders.add(ascending ? order.totalPrice.asc() : order.totalPrice.desc());
+                case "status" -> orders.add(ascending ? order.status.asc() : order.status.desc());
+                default -> orders.add(order.id.desc()); //매핑된 것 외의 문자열이 들어오면 id,desc 정렬.
+            }
         }
 
         return orders;
