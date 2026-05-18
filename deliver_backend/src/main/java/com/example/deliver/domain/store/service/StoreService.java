@@ -2,6 +2,7 @@ package com.example.deliver.domain.store.service;
 
 import com.example.deliver.domain.store.dto.StoreCreateRequest;
 import com.example.deliver.domain.store.dto.StoreResponse;
+import com.example.deliver.domain.store.dto.StoreSearchCondition;
 import com.example.deliver.domain.store.entity.Store;
 import com.example.deliver.domain.store.repository.StoreRepository;
 import com.example.deliver.domain.user.entity.User;
@@ -9,6 +10,8 @@ import com.example.deliver.domain.user.entity.UserRole;
 import com.example.deliver.domain.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,10 +47,9 @@ public class StoreService {
 
     //가게 전체 조회
     @Transactional(readOnly = true)
-    public List<StoreResponse> findStores() {
-        return storeRepository.findAll().stream()
-                .map(StoreResponse::toResponse)
-                .toList();
+    public Page<StoreResponse> findStores(StoreSearchCondition condition, Pageable pageable) {
+        return storeRepository.searchStores(condition,pageable)
+                .map(StoreResponse::toResponse);
     }
     //가게 단건 조회
     @Transactional(readOnly = true)
