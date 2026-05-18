@@ -38,6 +38,10 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
         //리뷰 목록 조회 쿼리. QueryDSL의 where()은 조건이 null이면 무시한다.
         List<Review> content = queryFactory
                 .selectFrom(review)
+                //성능 개선을 위한 fetch join.
+                .leftJoin(review.order).fetchJoin()
+                .leftJoin(review.store).fetchJoin()
+                .leftJoin(review.customer).fetchJoin()
                 .where(
                         review.store.id.eq(storeId),
                         minRatingGoe(condition), //만약 요청에 minRating이 없다면, null 반환.
@@ -52,6 +56,7 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
                 .fetch();
 
         //count 쿼리. 페이징 응답에는 전체 개수가 필요하다.
+        //count는 개수만 필요하므로, 연관 엔티티 로딩 불필요.
         Long total = queryFactory
                 .select(review.count())
                 .from(review)

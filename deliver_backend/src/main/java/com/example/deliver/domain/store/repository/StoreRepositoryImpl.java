@@ -25,6 +25,8 @@ public class StoreRepositoryImpl implements StoreRepositoryCustom {
     public Page<Store> searchStores(StoreSearchCondition condition, Pageable pageable) {
         List<Store> content = queryFactory
                 .selectFrom(store)
+                //성능 개선 fetch join 추가.
+                .leftJoin(store.owner).fetchJoin()
                 .where(keywordContains(condition))
                 .orderBy(getOrderSpecifiers(pageable).toArray(OrderSpecifier[]::new))
                 .offset(pageable.getOffset())
