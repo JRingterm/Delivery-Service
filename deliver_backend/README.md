@@ -96,6 +96,22 @@ RIDER
 
 ---
 
+### 🔍 검색 / 페이징
+
+- Pageable 기반 페이징 처리
+- QueryDSL 기반 동적 검색 구현
+- 리뷰 검색 및 정렬
+- 주문 검색 및 정렬
+- 가게 검색 및 정렬
+
+#### 지원 기능
+
+- 평점 범위 검색
+- 주문 금액 범위 검색
+- 키워드 검색
+- 정렬 조건 처리
+- 잘못된 정렬 요청 방어 처리
+
 ## 🔄 주문 상태 흐름
 
 ```text
@@ -174,103 +190,115 @@ Redis Refresh Token 삭제
 
 ---
 
-## 🐳 Docker 실행 가이드
+## 🐳 Docker
 
-Spring Boot 앱 + MySQL + Redis를 Docker Compose로 함께 실행할 수 있습니다.
+Docker Compose를 사용하여 Spring Boot, MySQL, Redis 환경을 컨테이너 기반으로 구성하였습니다.
 
 Docker 환경에서는 `SPRING_PROFILES_ACTIVE=docker` 설정을 통해  
 `application-docker.yml` 설정 파일이 함께 적용됩니다.
 
 ---
 
-### 1) 애플리케이션 빌드
+### 📦 컨테이너 구성
+
+| Container | Description |
+|---|---|
+| app | Spring Boot 애플리케이션 |
+| mysql | MySQL 8 데이터베이스 |
+| redis | Redis 7 (Refresh Token 저장소) |
+
+---
+
+### ⚙ 실행 방법
+
+#### 1. 애플리케이션 빌드
+
 Linux / Mac
+
 ```bash
 ./gradlew clean build
 ```
 
 Windows PowerShell
+
 ```powershell
 .\gradlew clean build
 ```
 
 ---
 
-### 2) Docker Compose 실행
+#### 2. Docker Compose 실행
+
 ```bash
 docker compose up --build -d
 ```
-실행 후 아래 컨테이너가 함께 동작합니다.
 
-- Spring Boot App
-- MySQL 8
-- Redis 7
+백그라운드(detached mode)로 컨테이너를 실행합니다.
 
 ---
 
-### 3) 접속 정보
-- 애플리케이션:  
-  http://localhost:8080
-- Swagger UI:  
-  http://localhost:8080/swagger-ui/index.html
-- MySQL:  
-  localhost:3306
-- Redis:  
-  localhost:6379
+### 🌐 접속 정보
+
+| Service | URL / Port                                  |
+|---|---------------------------------------------|
+| Application | http://localhost:8080                       |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| MySQL | localhost:3308                              |
+| Redis | localhost:6379                              |
+
+MySQL의 디폴트 포트인 3306은 로컬에서 사용중이라 3308로 대체했습니다.
 
 ---
 
-### 4) 컨테이너 상태 확인
+### 🔍 컨테이너 상태 확인
+
+전체 컨테이너 확인:
+
 ```bash
 docker ps
 ```
-로그 확인:
+
+전체 로그 확인:
+
 ```bash
 docker compose logs -f
 ```
 
-특정 컨테이너 로그 확인:
+app 컨테이너 로그 확인:
+
 ```bash
 docker compose logs -f app
 ```
 
 ---
 
-### 5) 컨테이너 중지
+### 🛑 컨테이너 종료
+
 ```bash
 docker compose down
 ```
-MySQL 데이터는 named volume(`mysql-data`)으로 유지됩니다.
+
+MySQL 데이터는 named volume(`mysql-data`)을 통해 유지됩니다.
 
 ---
 
-### 6) 컨테이너 및 볼륨 완전 삭제
+### 🗑 컨테이너 + 볼륨 완전 삭제
+
 ```bash
 docker compose down -v
 ```
-MySQL volume까지 함께 삭제됩니다.
+
+MySQL 데이터까지 함께 삭제됩니다.
 
 ---
 
-### 7) 사용 기술
-- Spring Boot 3
-- MySQL 8
-- Redis 7
-- Docker
-- Docker Compose
+### 🧩 Docker 환경 구성 목적
 
----
-
-### 8) Docker 환경 구성
-Docker Compose 실행 시:
-- `app` 컨테이너
-    - Spring Boot 애플리케이션 실행
-- `mysql` 컨테이너
-    - 애플리케이션 데이터 저장
-- `redis` 컨테이너
-    - Refresh Token 저장
-
-Redis는 JWT Refresh Token 저장소로 사용됩니다.
+- Spring Boot 실행 환경 컨테이너화
+- MySQL / Redis 의존성 분리
+- 개발 환경 일관성 확보
+- Docker Compose 기반 통합 실행 환경 구성
+- Refresh Token 저장소 Redis 분리 운영
 
 ---
 ## 🛠 기술 스택
@@ -297,6 +325,11 @@ Redis는 JWT Refresh Token 저장소로 사용됩니다.
 ### ETC
 
 - Lombok
+- QueryDSL
+- Redis
+- Swagger / OpenAPI
+- Docker
+- Docker Compose
 
 ---
 
@@ -380,6 +413,37 @@ N+1 문제를 방지하기 위해 `@EntityGraph`를 사용하였습니다.
 
 ---
 
+### Fetch Join 최적화
+
+QueryDSL의 `fetch join`을 활용하여 연관 엔티티를 한 번의 조회로 가져오도록 최적화하였습니다.
+
+```java
+.leftJoin(order.store).fetchJoin()
+.leftJoin(order.customer).fetchJoin()
+.leftJoin(order.orderItems, orderItem).fetchJoin()
+.leftJoin(orderItem.menu).fetchJoin()
+```
+
+---
+
+### 컬렉션 Fetch Join + Pageable 문제 해결
+
+컬렉션 fetch join과 Pageable을 함께 사용할 경우 발생할 수 있는 문제를 해결하기 위해:
+
+1. ID 목록 조회
+2. Fetch Join 조회
+
+의 2단계 조회 전략을 적용하였습니다.
+
+#### 적용 효과
+
+- N+1 문제 해결
+- 중복 데이터 최소화
+- 페이징 안정성 확보
+- 조회 성능 개선
+
+---
+
 ## 📌 주요 API 예시
 
 ### 회원가입
@@ -448,6 +512,10 @@ PATCH /api/rider/orders/{orderId}/complete
 - Cascade
 - EntityGraph
 - 양방향 연관관계 관리
+- QueryDSL 동적 쿼리 작성
+- Pageable 기반 페이징 처리
+- Fetch Join 최적화
+- 컬렉션 Fetch Join + Pageable 처리 전략
 
 ### 비즈니스 로직
 
@@ -465,11 +533,11 @@ PATCH /api/rider/orders/{orderId}/complete
 
 ## 🚀 향후 개선 예정
 
-- 리뷰 기능
-- 라이더 배정 시스템
+- 라이더 자동 배정 시스템
 - 결제 기능
-- Docker 적용
+- CI/CD 구축
 - AWS 배포
+- 모니터링 시스템 구축
 
 ---
 
