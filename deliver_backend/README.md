@@ -172,11 +172,107 @@ Redis Refresh Token 삭제
 - 자기 가게 주문만 관리 가능
 
 
+---
 
+## 🐳 Docker 실행 가이드
 
+Spring Boot 앱 + MySQL + Redis를 Docker Compose로 함께 실행할 수 있습니다.
+
+Docker 환경에서는 `SPRING_PROFILES_ACTIVE=docker` 설정을 통해  
+`application-docker.yml` 설정 파일이 함께 적용됩니다.
 
 ---
 
+### 1) 애플리케이션 빌드
+Linux / Mac
+```bash
+./gradlew clean build
+```
+
+Windows PowerShell
+```powershell
+.\gradlew clean build
+```
+
+---
+
+### 2) Docker Compose 실행
+```bash
+docker compose up --build -d
+```
+실행 후 아래 컨테이너가 함께 동작합니다.
+
+- Spring Boot App
+- MySQL 8
+- Redis 7
+
+---
+
+### 3) 접속 정보
+- 애플리케이션:  
+  http://localhost:8080
+- Swagger UI:  
+  http://localhost:8080/swagger-ui/index.html
+- MySQL:  
+  localhost:3306
+- Redis:  
+  localhost:6379
+
+---
+
+### 4) 컨테이너 상태 확인
+```bash
+docker ps
+```
+로그 확인:
+```bash
+docker compose logs -f
+```
+
+특정 컨테이너 로그 확인:
+```bash
+docker compose logs -f app
+```
+
+---
+
+### 5) 컨테이너 중지
+```bash
+docker compose down
+```
+MySQL 데이터는 named volume(`mysql-data`)으로 유지됩니다.
+
+---
+
+### 6) 컨테이너 및 볼륨 완전 삭제
+```bash
+docker compose down -v
+```
+MySQL volume까지 함께 삭제됩니다.
+
+---
+
+### 7) 사용 기술
+- Spring Boot 3
+- MySQL 8
+- Redis 7
+- Docker
+- Docker Compose
+
+---
+
+### 8) Docker 환경 구성
+Docker Compose 실행 시:
+- `app` 컨테이너
+    - Spring Boot 애플리케이션 실행
+- `mysql` 컨테이너
+    - 애플리케이션 데이터 저장
+- `redis` 컨테이너
+    - Refresh Token 저장
+
+Redis는 JWT Refresh Token 저장소로 사용됩니다.
+
+---
 ## 🛠 기술 스택
 
 ### Backend
