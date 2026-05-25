@@ -211,27 +211,35 @@ Docker 환경에서는 `SPRING_PROFILES_ACTIVE=docker` 설정을 통해
 
 ### ⚙ 실행 방법
 
-#### 1. 애플리케이션 빌드
+#### 1. 애플리케이션 빌드 (코드 변경 시, 빌드 필수)
 
-Linux / Mac
+*Linux / Mac*
 
 ```bash
 ./gradlew clean build
 ```
 
-Windows PowerShell
+*Windows PowerShell*
 
 ```powershell
 .\gradlew clean build
 ```
+build.gradle이 있는 경로에서 입력.
+
+가끔 테스트 때문에 빌드가 막힐 때는, 테스트 제외하고 빌드.
+```powershell
+.\gradlew clean build -x test
+```
 
 ---
 
-#### 2. Docker Compose 실행
+#### 2. Docker Compose 실행 (Docker로 프로젝트 실행)
 
+Docker Desktop 또는 Docker Engine을 실행시키고, docker-compose.yml 파일이 있는 경로에서 Bash 또는 PowerShell로 입력.
 ```bash
 docker compose up --build -d
 ```
+
 
 백그라운드(detached mode)로 컨테이너를 실행합니다.
 

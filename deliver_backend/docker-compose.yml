@@ -16,6 +16,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/deliver?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: deliver
       SPRING_DATASOURCE_PASSWORD: deliver
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
       #App Redis 컨테이너 연결
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

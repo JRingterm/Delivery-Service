@@ -35,6 +35,7 @@ public class DataInitializer { //애플리케이션 실행 시 테스트 데이�
     @Bean
     public CommandLineRunner initData() { //CommandLineRunner는 Spring Boot 실행 직후 딱 한번만 실행되는 코드이다.
         return args -> { //실행하게 할 로직 작성
+            System.out.println(">>> DataInitializer 실행됨");
             if (userRepository.count() > 0) { //초기데이터 중복생성 방지.
                 return;
             }
