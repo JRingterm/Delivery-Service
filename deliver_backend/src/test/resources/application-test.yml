@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:deliver-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: test-jwt-secret-key-for-payment-service-tests-32chars+
+  access-token-expiration-ms: 3600000
+  refresh-token-expiration-ms: 1209600000
