@@ -96,6 +96,23 @@ RIDER
 
 ---
 
+### 💳 결제 (Payment)
+
+- 주문에 대한 Mock 결제 처리
+- 결제 금액 검증
+- 중복 결제 방지
+- 주문별 결제 정보 조회
+
+#### 결제 규칙
+
+- CUSTOMER만 결제 가능
+- 본인 주문만 결제 가능
+- CREATED 상태 주문만 결제 가능
+- 결제 금액은 주문 금액과 일치해야 함
+- 이미 결제된 주문은 재결제 불가
+
+---
+
 ### 🔍 검색 / 페이징
 
 - Pageable 기반 페이징 처리
@@ -190,6 +207,36 @@ Redis Refresh Token 삭제
 
 ---
 
+## ✅ 테스트
+
+PaymentService의 핵심 비즈니스 로직에 대한 테스트 코드를 작성하였습니다.
+
+### 테스트 대상
+
+- PaymentService
+
+### 테스트 내용
+
+- 결제 성공
+- 중복 결제 방지
+- 결제 금액 불일치 검증
+- CUSTOMER가 아닌 사용자 결제 방지
+- 본인 주문이 아닌 주문 결제 방지
+- CREATED 상태가 아닌 주문 결제 방지
+- 결제 정보 조회 성공
+- 결제 정보가 없는 주문 조회 실패
+
+### 테스트 환경
+
+테스트 환경에서는 `application-test.yml`을 사용하며, H2 메모리 DB를 통해 테스트를 수행합니다.
+
+Git Bash
+```bash
+./gradlew test --tests "com.example.deliver.domain.payment.service.PaymentServiceTest"
+```
+
+
+---
 ## 🐳 Docker
 
 Docker Compose를 사용하여 Spring Boot, MySQL, Redis 환경을 컨테이너 기반으로 구성하였습니다.
@@ -347,24 +394,35 @@ MySQL 데이터까지 함께 삭제됩니다.
 **Entity - Repository - Service - DTO - Controller 구조**를 기반으로 설계합니다.
 
 ```text
-src/main/java/com/example/deliver
-├─ domain
-│  ├─ user
-│  │  ├─ entity
-│  │  ├─ repository
-│  │  ├─ service
-│  │  ├─ dto
-│  │  └─ controller
-│  ├─ store
-│  ├─ menu
-│  ├─ order
-│  ├─ payment
-│  └─ delivery
-└─ global
-   ├─ config
-   ├─ security
-   ├─ exception
-   └─ response
+src
+├─ main
+│  └─ java/com/example/deliver
+│      ├─ domain
+│      │  ├─ user
+│      │  │  ├─ entity
+│      │  │  ├─ repository
+│      │  │  ├─ service
+│      │  │  ├─ dto
+│      │  │  └─ controller
+│      │  ├─ store
+│      │  ├─ menu
+│      │  ├─ order
+│      │  ├─ payment
+│      │  └─ review
+│      │
+│      └─ global
+│          ├─ config
+│          ├─ security
+│          ├─ exception
+│          └─ response
+│
+└─ test
+   ├─ java/com/example/deliver
+   │   └─ domain/payment/service
+   │       └─ PaymentServiceTest.java
+   │
+   └─ resources
+       └─ application-test.yml
 ```
 
 ---
@@ -374,10 +432,15 @@ src/main/java/com/example/deliver
 ```text
 User 1 : N Store
 Store 1 : N Menu
+
 User 1 : N Order
 Store 1 : N Order
+
 Order 1 : N OrderItem
 Menu 1 : N OrderItem
+
+Order 1 : 1 Payment
+User 1 : N Payment
 ```
 
 ---
@@ -512,6 +575,7 @@ PATCH /api/rider/orders/{orderId}/complete
 - Authentication / Authorization
 - AuthenticationPrincipal 활용
 - Stateless 인증 구조
+- Redis 기반 Refresh Token 관리
 
 ### JPA
 
@@ -524,6 +588,29 @@ PATCH /api/rider/orders/{orderId}/complete
 - Pageable 기반 페이징 처리
 - Fetch Join 최적화
 - 컬렉션 Fetch Join + Pageable 처리 전략
+
+### 결제 시스템
+
+- Mock 기반 결제 시스템 구현
+- 결제 상태 관리
+- 중복 결제 방지 로직
+- 주문 상태 기반 결제 검증
+- 금액 위변조 방지 검증
+
+### 테스트 코드
+
+- SpringBootTest 기반 통합 테스트
+- H2 기반 테스트 환경 분리
+- application-test.yml 구성
+- 비즈니스 로직 예외 테스트
+- AssertJ 기반 검증
+
+### Docker
+
+- Docker Compose 기반 실행 환경 구성
+- Spring Profile 기반 환경 분리
+- MySQL / Redis 컨테이너 구성
+- application-docker.yml 환경 설정 관리
 
 ### 비즈니스 로직
 
@@ -542,7 +629,7 @@ PATCH /api/rider/orders/{orderId}/complete
 ## 🚀 향후 개선 예정
 
 - 라이더 자동 배정 시스템
-- 결제 기능
+- 실제 PG 결제 연동
 - CI/CD 구축
 - AWS 배포
 - 모니터링 시스템 구축
