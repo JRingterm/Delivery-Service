@@ -81,4 +81,9 @@ public class Order { //주문서 전체. (누가? 어느가게에? 총 가격? �
     public void updateStatus(OrderStatus status) {
         this.status = status;
     }
+
+    //주문 취소 상태변경 메소드
+    public void cancel() {
+        this.status = OrderStatus.CANCELED;
+    }
 }

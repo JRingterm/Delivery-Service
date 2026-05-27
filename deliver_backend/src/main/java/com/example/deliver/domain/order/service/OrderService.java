@@ -10,6 +10,9 @@ import com.example.deliver.domain.order.entity.Order;
 import com.example.deliver.domain.order.entity.OrderItem;
 import com.example.deliver.domain.order.entity.OrderStatus;
 import com.example.deliver.domain.order.repository.OrderRepository;
+import com.example.deliver.domain.payment.entity.Payment;
+import com.example.deliver.domain.payment.entity.PaymentStatus;
+import com.example.deliver.domain.payment.repository.PaymentRepository;
 import com.example.deliver.domain.store.entity.Store;
 import com.example.deliver.domain.store.repository.StoreRepository;
 import com.example.deliver.domain.user.entity.User;
@@ -34,6 +37,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
+    private final PaymentRepository paymentRepository;
 
     //주문 생성
     @Transactional
@@ -166,6 +170,34 @@ public class OrderService {
     public OrderResponse markReadyForDelivery(String ownerEmail, Long orderId) { //COOKING 상태만 READY_FOR_DELIVERY 가능.
         return updateOwnerOrderStatus(ownerEmail, orderId, OrderStatus.COOKING, OrderStatus.READY_FOR_DELIVERY);
     }
+    //내 주문 취소
+    @Transactional
+    public OrderResponse cancelMyOrder(String customerEmail, Long orderId) {
+        User customer = userRepository.findByEmail(customerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        if (customer.getRole() != UserRole.CUSTOMER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CUSTOMER만 주문을 취소할 수 있습니다.");
+        }
+
+        Order order = orderRepository.findByIdAndCustomerId(orderId, customer.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        //주문이 CREATED 상태나 ACCEPTED 상태일때만 취소 가능
+        if (order.getStatus() != OrderStatus.CREATED && order.getStatus() != OrderStatus.ACCEPTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "취소할 수 없는 주문 상태입니다.");
+        }
+
+        order.cancel();
+
+        //결제 정보가 있으면 결제도 취소
+        paymentRepository.findByOrderId(orderId)
+                .filter(payment -> payment.getStatus() == PaymentStatus.PAID)
+                .ifPresent(Payment::cancel);
+
+        return OrderResponse.toResponse(order);
+    }
+
     //Rider 픽업
     @Transactional
     public OrderResponse pickupOrder(String riderEmail, Long orderId) {

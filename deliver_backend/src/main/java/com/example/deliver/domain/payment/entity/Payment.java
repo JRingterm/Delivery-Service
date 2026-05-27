@@ -55,4 +55,11 @@ public class Payment {
         this.status = status;
         this.method = method;
     }
+
+    //결제 상태를 취소 상태로 바꾸기
+    public void cancel() {
+        if (this.status != PaymentStatus.CANCELED) {
+            this.status = PaymentStatus.CANCELED;
+        }
+    }
 }
