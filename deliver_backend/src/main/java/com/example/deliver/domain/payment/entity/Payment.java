@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,13 +48,31 @@ public class Payment {
     @Column(nullable = false, length = 20)
     private PaymentMethod method;
 
+    private String paymentKey;
+
+    private String pgOrderId;
+
+    private LocalDateTime approvedAt;
+
     @Builder
-    public Payment(Order order, User customer, Integer amount, PaymentStatus status, PaymentMethod method) {
+    public Payment(
+            Order order,
+            User customer,
+            Integer amount,
+            PaymentStatus status,
+            PaymentMethod method,
+            String paymentKey,  //PG 결제 고유 식별값.
+            String pgOrderId,   //PG 측 주문 번호.
+            LocalDateTime approvedAt    //PG 승인 시각.
+    ) {
         this.order = order;
         this.customer = customer;
         this.amount = amount;
         this.status = status;
         this.method = method;
+        this.paymentKey = paymentKey;
+        this.pgOrderId = pgOrderId;
+        this.approvedAt = approvedAt;
     }
 
     //결제 상태를 취소 상태로 바꾸기

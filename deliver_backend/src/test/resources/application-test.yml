@@ -22,3 +22,7 @@ jwt:
   secret: test-jwt-secret-key-for-payment-service-tests-32chars+
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 1209600000
+
+toss:
+  payments:
+    secret-key: test_sk_test_placeholder

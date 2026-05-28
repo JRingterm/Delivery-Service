@@ -1,5 +1,9 @@
 package com.example.deliver.domain.payment.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,7 +15,10 @@ import com.example.deliver.domain.order.entity.Order;
 import com.example.deliver.domain.order.entity.OrderItem;
 import com.example.deliver.domain.order.entity.OrderStatus;
 import com.example.deliver.domain.order.repository.OrderRepository;
+import com.example.deliver.domain.payment.client.TossPaymentClient;
 import com.example.deliver.domain.payment.dto.PaymentCreateRequest;
+import com.example.deliver.domain.payment.dto.TossPaymentConfirmRequest;
+import com.example.deliver.domain.payment.dto.TossPaymentConfirmResponse;
 import com.example.deliver.domain.payment.entity.Payment;
 import com.example.deliver.domain.payment.entity.PaymentMethod;
 import com.example.deliver.domain.payment.entity.PaymentStatus;
@@ -28,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -62,6 +70,9 @@ class PaymentControllerTest {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @MockBean //실제 TOSS 서버를 호출하는 것을 막는다.
+    private TossPaymentClient tossPaymentClient;
 
     @Test
     void 결제_성공() throws Exception {
@@ -148,6 +159,70 @@ class PaymentControllerTest {
         Fixture fixture = createFixture();
         String token = bearerToken(fixture.customer.getEmail());
         PaymentCreateRequest request = new PaymentCreateRequest(fixture.order.getTotalPrice() + 500, PaymentMethod.MOCK);
+
+        mockMvc.perform(post("/api/orders/{orderId}/payments", fixture.order.getId())
+                        .header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void Toss_결제_승인_성공() throws Exception {
+        Fixture fixture = createFixture();
+        String token = bearerToken(fixture.customer.getEmail());
+        TossPaymentConfirmRequest request = new TossPaymentConfirmRequest(
+                "payment-key-" + fixture.order.getId(),
+                fixture.order.getId().toString(),
+                fixture.order.getTotalPrice()
+        );
+        //when()으로 가짜 응답을 지정.
+        when(tossPaymentClient.confirm(request)).thenReturn(new TossPaymentConfirmResponse(
+                request.paymentKey(),
+                request.orderId(),
+                "카드",
+                request.amount(),
+                "DONE",
+                "2026-05-28T10:15:30+09:00"
+        ));
+
+        mockMvc.perform(post("/api/payments/toss/confirm")
+                        .header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderId").value(fixture.order.getId()))
+                .andExpect(jsonPath("$.method").value("TOSS"))
+                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.pgOrderId").value(fixture.order.getId().toString()))
+                .andExpect(jsonPath("$.approvedAt").exists());
+    }
+
+    @Test
+    void Toss_결제_금액_불일치시_400() throws Exception {
+        Fixture fixture = createFixture();
+        String token = bearerToken(fixture.customer.getEmail());
+        TossPaymentConfirmRequest request = new TossPaymentConfirmRequest(
+                "payment-key-" + fixture.order.getId(),
+                fixture.order.getId().toString(),
+                fixture.order.getTotalPrice() + 500
+        );
+
+        mockMvc.perform(post("/api/payments/toss/confirm")
+                        .header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        //verify(... never())로 금액 검증 실패 시, 아예 PG 호출 자체를 안했는지 검증하는 테스트.
+        verify(tossPaymentClient, never()).confirm(any(TossPaymentConfirmRequest.class));
+    }
+
+    @Test
+    void Mock_결제_API에서_TOSS_method_요청시_400() throws Exception {
+        Fixture fixture = createFixture();
+        String token = bearerToken(fixture.customer.getEmail());
+        PaymentCreateRequest request = new PaymentCreateRequest(fixture.order.getTotalPrice(), PaymentMethod.TOSS);
 
         mockMvc.perform(post("/api/orders/{orderId}/payments", fixture.order.getId())
                         .header("Authorization", token)

@@ -2,6 +2,10 @@ package com.example.deliver.domain.payment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.example.deliver.domain.menu.entity.Menu;
 import com.example.deliver.domain.menu.repository.MenuRepository;
@@ -9,8 +13,11 @@ import com.example.deliver.domain.order.entity.Order;
 import com.example.deliver.domain.order.entity.OrderItem;
 import com.example.deliver.domain.order.entity.OrderStatus;
 import com.example.deliver.domain.order.repository.OrderRepository;
+import com.example.deliver.domain.payment.client.TossPaymentClient;
 import com.example.deliver.domain.payment.dto.PaymentCreateRequest;
 import com.example.deliver.domain.payment.dto.PaymentResponse;
+import com.example.deliver.domain.payment.dto.TossPaymentConfirmRequest;
+import com.example.deliver.domain.payment.dto.TossPaymentConfirmResponse;
 import com.example.deliver.domain.payment.entity.Payment;
 import com.example.deliver.domain.payment.entity.PaymentMethod;
 import com.example.deliver.domain.payment.entity.PaymentStatus;
@@ -24,6 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +59,9 @@ class PaymentServiceTest {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @MockBean
+    private TossPaymentClient tossPaymentClient;
 
     @Test
     void 결제_성공() {
@@ -174,6 +185,87 @@ class PaymentServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void Mock_결제_API에서_TOSS_method_요청시_400() {
+        Fixture fixture = createFixture();
+
+        PaymentCreateRequest request = new PaymentCreateRequest(fixture.order.getTotalPrice(), PaymentMethod.TOSS);
+
+        assertThatThrownBy(() -> paymentService.payOrder(fixture.customer.getEmail(), fixture.order.getId(), request))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void Toss_결제_승인_성공() {
+        Fixture fixture = createFixture();
+        TossPaymentConfirmRequest request = new TossPaymentConfirmRequest(
+                "payment-key-" + fixture.order.getId(),
+                fixture.order.getId().toString(),
+                fixture.order.getTotalPrice()
+        );
+        when(tossPaymentClient.confirm(request)).thenReturn(new TossPaymentConfirmResponse(
+                request.paymentKey(),
+                request.orderId(),
+                "카드",
+                request.amount(),
+                "DONE",
+                "2026-05-28T10:15:30+09:00"
+        ));
+
+        PaymentResponse response = paymentService.confirmTossPayment(fixture.customer.getEmail(), request);
+
+        assertThat(response.status()).isEqualTo(PaymentStatus.PAID);
+        assertThat(response.method()).isEqualTo(PaymentMethod.TOSS);
+        assertThat(response.amount()).isEqualTo(fixture.order.getTotalPrice());
+
+        Payment savedPayment = paymentRepository.findByOrderId(fixture.order.getId()).orElseThrow();
+        assertThat(savedPayment.getPaymentKey()).isEqualTo(request.paymentKey());
+        assertThat(savedPayment.getPgOrderId()).isEqualTo(request.orderId());
+        assertThat(savedPayment.getApprovedAt()).isNotNull();
+    }
+
+    @Test
+    void Toss_결제_금액_불일치시_승인_API를_호출하지_않고_400() {
+        Fixture fixture = createFixture();
+        TossPaymentConfirmRequest request = new TossPaymentConfirmRequest(
+                "payment-key-" + fixture.order.getId(),
+                fixture.order.getId().toString(),
+                fixture.order.getTotalPrice() + 100
+        );
+
+        assertThatThrownBy(() -> paymentService.confirmTossPayment(fixture.customer.getEmail(), request))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(tossPaymentClient, never()).confirm(any(TossPaymentConfirmRequest.class));
+    }
+
+    @Test
+    void Toss_응답_status가_DONE이_아니면_502() {
+        Fixture fixture = createFixture();
+        TossPaymentConfirmRequest request = new TossPaymentConfirmRequest(
+                "payment-key-" + fixture.order.getId(),
+                fixture.order.getId().toString(),
+                fixture.order.getTotalPrice()
+        );
+        when(tossPaymentClient.confirm(request)).thenReturn(new TossPaymentConfirmResponse(
+                request.paymentKey(),
+                request.orderId(),
+                "카드",
+                request.amount(),
+                "WAITING_FOR_DEPOSIT",
+                null
+        ));
+
+        assertThatThrownBy(() -> paymentService.confirmTossPayment(fixture.customer.getEmail(), request))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_GATEWAY);
     }
 
     private Fixture createFixture() {
