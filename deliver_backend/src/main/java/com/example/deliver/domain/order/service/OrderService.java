@@ -209,14 +209,19 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "RIDER만 배달 상태를 변경할 수 있습니다.");
         }
 
-        Order order = orderRepository.findById(orderId)
+        //락 걸고 주문 조회
+        Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
-        //READY_FOR_DELIVERY 상태인 주문만 픽업 가능.
-        if (order.getStatus() != OrderStatus.READY_FOR_DELIVERY) {
+
+        if (order.getRider() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 다른 라이더가 배정된 주문입니다.");
+        }
+
+        if (!order.canPickup()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "READY_FOR_DELIVERY 상태 주문만 픽업할 수 있습니다.");
         }
 
-        order.updateStatus(OrderStatus.DELIVERING);
+        order.pickup(rider);
         return OrderResponse.toResponse(order);
     }
     //Rider 배달 완료

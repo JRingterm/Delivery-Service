@@ -153,6 +153,83 @@ class OrderServiceTest {
                 .isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Test
+    void READY_FOR_DELIVERY_주문을_RIDER가_픽업하면_DELIVERING으로_변경된다() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.READY_FOR_DELIVERY);
+
+        OrderResponse response = orderService.pickupOrder(fixture.rider.getEmail(), fixture.order.getId());
+
+        assertThat(response.status()).isEqualTo(OrderStatus.DELIVERING);
+    }
+
+    @Test
+    void 픽업_성공시_riderId가_응답에_포함된다() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.READY_FOR_DELIVERY);
+
+        OrderResponse response = orderService.pickupOrder(fixture.rider.getEmail(), fixture.order.getId());
+
+        assertThat(response.riderId()).isEqualTo(fixture.rider.getId());
+    }
+
+    @Test
+    void CUSTOMER가_픽업시도하면_403() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.READY_FOR_DELIVERY);
+
+        assertThatThrownBy(() -> orderService.pickupOrder(fixture.customer.getEmail(), fixture.order.getId()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void OWNER가_픽업시도하면_403() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.READY_FOR_DELIVERY);
+
+        assertThatThrownBy(() -> orderService.pickupOrder(fixture.owner.getEmail(), fixture.order.getId()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void CREATED_상태_주문_픽업시_400() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.CREATED);
+
+        assertThatThrownBy(() -> orderService.pickupOrder(fixture.rider.getEmail(), fixture.order.getId()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void 이미_DELIVERING_상태인_주문_픽업시_400() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.DELIVERING);
+
+        assertThatThrownBy(() -> orderService.pickupOrder(fixture.rider.getEmail(), fixture.order.getId()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void 이미_rider가_배정된_주문_픽업시_409() {
+        PickupFixture fixture = createPickupFixture(OrderStatus.READY_FOR_DELIVERY);
+        orderService.pickupOrder(fixture.rider.getEmail(), fixture.order.getId());
+
+        String unique = UUID.randomUUID().toString().substring(0, 8);
+        User anotherRider = userRepository.save(User.builder()
+                .email("rider2-" + unique + "@test.com")
+                .password("pw")
+                .nickname("rider2-" + unique)
+                .role(UserRole.RIDER)
+                .build());
+
+        assertThatThrownBy(() -> orderService.pickupOrder(anotherRider.getEmail(), fixture.order.getId()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+    }
+
     private Fixture createFixture(OrderStatus orderStatus) {
         String unique = UUID.randomUUID().toString().substring(0, 8);
 
@@ -199,6 +276,62 @@ class OrderServiceTest {
         return new Fixture(owner, customer, orderRepository.save(order));
     }
 
+    private PickupFixture createPickupFixture(OrderStatus orderStatus) {
+        String unique = UUID.randomUUID().toString().substring(0, 8);
+
+        User owner = userRepository.save(User.builder()
+                .email("owner-p-" + unique + "@test.com")
+                .password("pw")
+                .nickname("owner-p-" + unique)
+                .role(UserRole.OWNER)
+                .build());
+
+        User customer = userRepository.save(User.builder()
+                .email("customer-p-" + unique + "@test.com")
+                .password("pw")
+                .nickname("customer-p-" + unique)
+                .role(UserRole.CUSTOMER)
+                .build());
+
+        User rider = userRepository.save(User.builder()
+                .email("rider-" + unique + "@test.com")
+                .password("pw")
+                .nickname("rider-" + unique)
+                .role(UserRole.RIDER)
+                .build());
+
+        Store store = storeRepository.save(Store.builder()
+                .name("픽업 테스트 가게")
+                .description("설명")
+                .owner(owner)
+                .build());
+
+        Menu menu = menuRepository.save(Menu.builder()
+                .name("라면")
+                .price(7000)
+                .description("기본 라면")
+                .store(store)
+                .build());
+
+        Order order = Order.builder()
+                .customer(customer)
+                .store(store)
+                .totalPrice(7000)
+                .status(orderStatus)
+                .build();
+
+        order.addOrderItem(OrderItem.builder()
+                .menu(menu)
+                .quantity(1)
+                .price(7000)
+                .build());
+
+        return new PickupFixture(owner, customer, rider, orderRepository.save(order));
+    }
+
     private record Fixture(User owner, User customer, Order order) {
+    }
+
+    private record PickupFixture(User owner, User customer, User rider, Order order) {
     }
 }

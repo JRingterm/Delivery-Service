@@ -8,6 +8,7 @@ import java.util.List;
 public record OrderResponse(
         Long id,
         Long storeId,
+        Long riderId,
         Integer totalPrice,
         OrderStatus status,
         List<OrderItemResponse> items
@@ -16,6 +17,7 @@ public record OrderResponse(
         return new OrderResponse(
                 order.getId(),
                 order.getStore().getId(),
+                order.getRider() != null ? order.getRider().getId() : null, //rider 배정 전에는 null.
                 order.getTotalPrice(),
                 order.getStatus(),
                 order.getOrderItems().stream()

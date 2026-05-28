@@ -40,6 +40,10 @@ public class Order { //주문서 전체. (누가? 어느가게에? 총 가격? �
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rider_id")
+    private User rider; //주문이 어떤 라이더에게 배정됐는가. 추가
+
     @Column(nullable = false)
     private Integer totalPrice;
 
@@ -85,5 +89,16 @@ public class Order { //주문서 전체. (누가? 어느가게에? 총 가격? �
     //주문 취소 상태변경 메소드
     public void cancel() {
         this.status = OrderStatus.CANCELED;
+    }
+
+    //픽업 가능한 주문인지. entity에 메소드로 만듦으로써, 코드의 의미 파악이 쉽도록 함.
+    public boolean canPickup() {
+        return this.status == OrderStatus.READY_FOR_DELIVERY;
+    }
+
+    //픽업 성공시 라이더 연결 후 상태 변경
+    public void pickup(User rider) {
+        this.rider = rider;
+        this.status = OrderStatus.DELIVERING;
     }
 }

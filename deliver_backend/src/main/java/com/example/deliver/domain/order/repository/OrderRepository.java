@@ -3,8 +3,13 @@ package com.example.deliver.domain.order.repository;
 import com.example.deliver.domain.order.entity.Order;
 import java.util.List;
 import java.util.Optional;
+
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 //Querydsl 적용.
 public interface OrderRepository extends JpaRepository<Order, Long>, OrderRepositoryCustom {
@@ -25,4 +30,9 @@ public interface OrderRepository extends JpaRepository<Order, Long>, OrderReposi
     //가게의 Owner가 가진 단건 주문. orderId만 알면, A가 B의 주문을 조회할 수 있으므로, OwnerId 까지 비교한다.
     @EntityGraph(attributePaths = {"store", "customer", "orderItems", "orderItems.menu"})
     Optional<Order> findByIdAndStoreOwnerId(Long id, Long ownerId);
+
+    @EntityGraph(attributePaths = {"store", "rider", "orderItems", "orderItems.menu"})
+    @Lock(LockModeType.PESSIMISTIC_WRITE) //한 주문에 라이더가 2명 배정되는 문제를 막기 위한 쓰기 락.
+    @Query("select o from Order o where o.id = :orderId")
+    Optional<Order> findByIdForUpdate(@Param("orderId") Long orderId); //수정 목적의 조회(주문 조회 + 쓰기 락)
 }
