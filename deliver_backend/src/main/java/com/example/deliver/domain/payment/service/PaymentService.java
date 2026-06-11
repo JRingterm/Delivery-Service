@@ -112,10 +112,12 @@ public class PaymentService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Toss 결제가 완료 상태가 아닙니다.");
         }
 
+        //프론트엔드에서 전달되는 amount 값은 조작될 수 있으므로, 백엔드에서 DB에 저장된 실제 주문 금액과 비교한다.
         if (!request.amount().equals(tossResponse.totalAmount())) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Toss 승인 금액이 주문 금액과 일치하지 않습니다.");
         }
 
+        //위 검증이 모두 완료된다면, PAID 상태로 DB에 저장.
         Payment payment = Payment.builder()
                 .order(order)
                 .customer(customer)

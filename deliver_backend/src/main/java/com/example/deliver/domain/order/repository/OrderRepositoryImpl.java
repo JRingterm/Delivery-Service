@@ -29,7 +29,8 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
     //실제 조회 쿼리
     @Override
     public Page<Order> searchOwnerOrders(Long ownerId, OrderSearchCondition condition, Pageable pageable) {
-        //Order는 OrderItem을 여러개 가질 수 있는 1:N 관계(OneToMany)라서, fetch join과 Pageable을 같이쓰면 페이징이 깨질 수 있다.
+        //Order는 OrderItem을 여러개 가질 수 있는 1:N(@OneToMany) 관계이며, 컬렉션(List<OrderItem> orderItems)을 가진다.
+        //따라서, 컬렉션(OneToMany, ManyToMany)에서 fetch join과 Pageable을 같이쓰면 페이징이 깨질 수 있다.
         //예를들어, 한 Order에 3개의 OrderItem이 있을 때, fetch join시 DB입장에서는 Order 1개가 아닌, row 3개로 보인다.
         //여기에 페이징을 바로 걸어버리면, 문제가 발생하는 것.
         //fetch join 대상이 ManyToOne인 Review와 Store는 row가 폭발하지 않으므로 조치하지 않음.

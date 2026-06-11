@@ -87,21 +87,33 @@ RIDER
 
 ### 🚴 배달 (Rider)
 
+- 라이더 배정
 - 주문 픽업
 - 배달 완료 처리
 
 #### 권한 정책
 
-- RIDER만 배달 상태 변경 가능
+- READY_FOR_DELIVERY 상태만 픽업 가능
+- 이미 배정된 주문은 중복 픽업 불가(비관적 락)
+- RIDER만 픽업 가능
 
 ---
 
 ### 💳 결제 (Payment)
 
-- 주문에 대한 Mock 결제 처리
+- Mock 결제 처리
+- Toss Payments 승인 API 연동 구조 구현
 - 결제 금액 검증
 - 중복 결제 방지
 - 주문별 결제 정보 조회
+- PG 응답 상태 검증
+- 결제 승인 정보 저장
+
+#### 저장 정보
+
+- paymentKey
+- pgOrderId
+- approvedAt
 
 #### 결제 규칙
 
@@ -131,6 +143,7 @@ RIDER
 
 ## 🔄 주문 상태 흐름
 
+주문 수락 흐름
 ```text
 CREATED
 → ACCEPTED
@@ -140,11 +153,20 @@ CREATED
 → COMPLETED
 ```
 
-또는
+주문 거절 흐름
 
 ```text
 CREATED
 → REJECTED
+```
+
+주문 취소 흐름
+```text
+CREATED
+→ CANCELED
+
+ACCEPTED
+→ CANCELED
 ```
 
 ---
@@ -209,12 +231,14 @@ Redis Refresh Token 삭제
 
 ## ✅ 테스트
 
-PaymentService의 핵심 비즈니스 로직에 대한 테스트 코드를 작성하였습니다.
+Payment의 핵심 비즈니스 로직에 대한 테스트 코드를 작성하였습니다.
 
 ### 테스트 대상
 
 - PaymentService
-
+- PaymentControllerTest
+- OrderServiceTest
+- 
 ### 테스트 내용
 
 - 결제 성공
@@ -390,8 +414,13 @@ MySQL 데이터까지 함께 삭제됩니다.
 
 ## 🏗 프로젝트 구조
 
-본 프로젝트는 역할과 책임을 분리하기 위해  
-**Entity - Repository - Service - DTO - Controller 구조**를 기반으로 설계합니다.
+본 프로젝트는 도메인 중심 패키지 구조(Domain Package Structure)를 적용하였습니다.
+
+각 도메인은 다음 계층으로 분리됩니다.
+
+**Entity - Repository - Service - DTO - Controller 구조**
+
+이를 통해 역할과 책임을 분리하고 유지보수성을 높였습니다.
 
 ```text
 src
@@ -404,23 +433,52 @@ src
 │      │  │  ├─ service
 │      │  │  ├─ dto
 │      │  │  └─ controller
+│      │  │
 │      │  ├─ store
 │      │  ├─ menu
+│      │  │
 │      │  ├─ order
+│      │  │  ├─ controller
+│      │  │  ├─ dto
+│      │  │  ├─ entity
+│      │  │  ├─ repository
+│      │  │  │  ├─ OrderRepository
+│      │  │  │  ├─ OrderRepositoryCustom
+│      │  │  │  └─ OrderRepositoryImpl
+│      │  │  └─ service
+│      │  │
 │      │  ├─ payment
+│      │  │  ├─ client
+│      │  │  │  └─ TossPaymentClient
+│      │  │  ├─ controller
+│      │  │  ├─ dto
+│      │  │  ├─ entity
+│      │  │  ├─ repository
+│      │  │  └─ service
 │      │  └─ review
 │      │
 │      └─ global
 │          ├─ config
+│          │
 │          ├─ security
+│          │  ├─ jwt
+│          │  ├─ filter
+│          │  └─ service
+│          │
 │          ├─ exception
 │          └─ response
 │
 └─ test
-   ├─ java/com/example/deliver
-   │   └─ domain/payment/service
-   │       └─ PaymentServiceTest.java
-   │
+   ├─ java
+   │   └─ com/example/deliver
+   │       ├─ domain/order/service
+   │       │   └─ OrderServiceTest
+   │       │
+   │       ├─ domain/payment/service
+   │       │   └─ PaymentServiceTest
+   │       │
+   │       └─ domain/payment/controller
+   │           └─ PaymentControllerTest
    └─ resources
        └─ application-test.yml
 ```
@@ -430,17 +488,19 @@ src
 ## 🗄 JPA 연관관계 설계
 
 ```text
-User 1 : N Store
+User(OWNER) 1 : N Store
 Store 1 : N Menu
 
-User 1 : N Order
+User(CUSTOMER) 1 : N Order
 Store 1 : N Order
+
+User(RIDER) 1 : N Order
 
 Order 1 : N OrderItem
 Menu 1 : N OrderItem
 
 Order 1 : 1 Payment
-User 1 : N Payment
+User(CUSTOMER) 1 : N Payment
 ```
 
 ---
@@ -482,7 +542,7 @@ N+1 문제를 방지하기 위해 `@EntityGraph`를 사용하였습니다.
 })
 ```
 
----
+
 
 ### Fetch Join 최적화
 
@@ -495,14 +555,14 @@ QueryDSL의 `fetch join`을 활용하여 연관 엔티티를 한 번의 조회�
 .leftJoin(orderItem.menu).fetchJoin()
 ```
 
----
+
 
 ### 컬렉션 Fetch Join + Pageable 문제 해결
 
-컬렉션 fetch join과 Pageable을 함께 사용할 경우 발생할 수 있는 문제를 해결하기 위해:
+컬렉션(OneToMany, ManyToMany) fetch join과 Pageable을 함께 사용할 경우, 기대하지 않은 페이징이 발생할 수 있는 문제를 해결하기 위해:
 
-1. ID 목록 조회
-2. Fetch Join 조회
+1. 먼저 ID 목록 조회
+2. 이후 Fetch Join 조회
 
 의 2단계 조회 전략을 적용하였습니다.
 
@@ -515,6 +575,28 @@ QueryDSL의 `fetch join`을 활용하여 연관 엔티티를 한 번의 조회�
 
 ---
 
+### 동시성 제어
+
+라이더가 동일 주문을 동시에 픽업하는 상황을 방지하기 위해
+비관적 락(Pessimistic Lock)을 적용하였습니다.
+
+#### 적용 기술
+
+- JPA @Lock
+- PESSIMISTIC_WRITE
+
+```java
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("select o from Order o where o.id = :orderId")
+Optional<Order> findByIdForUpdate(Long orderId);
+```
+#### 적용 효과
+- 중복 배달 배정 방지
+- 데이터 정합성 보장
+- 동시성 이슈 예방
+
+---
+        
 ## 📌 주요 API 예시
 
 ### 회원가입
@@ -592,10 +674,13 @@ PATCH /api/rider/orders/{orderId}/complete
 ### 결제 시스템
 
 - Mock 기반 결제 시스템 구현
+- Toss Payments 승인 API 연동 구조 구현
+- 외부 API 연동(Client 분리)
 - 결제 상태 관리
 - 중복 결제 방지 로직
 - 주문 상태 기반 결제 검증
 - 금액 위변조 방지 검증
+- PG 응답 검증
 
 ### 테스트 코드
 
@@ -628,8 +713,10 @@ PATCH /api/rider/orders/{orderId}/complete
 
 ## 🚀 향후 개선 예정
 
+- Toss Payments 실제 테스트 결제 연동
+- 결제 취소 / 환불 API
+- Webhook 기반 결제 상태 동기화
 - 라이더 자동 배정 시스템
-- 실제 PG 결제 연동
 - CI/CD 구축
 - AWS 배포
 - 모니터링 시스템 구축
