@@ -331,19 +331,19 @@ MySQL의 디폴트 포트인 3306은 로컬에서 사용중이라 3308로 대체
 
 ### 🔍 컨테이너 상태 확인
 
-전체 컨테이너 확인:
+전체 컨테이너 확인
 
 ```bash
 docker ps
 ```
 
-전체 로그 확인:
+전체 로그 확인
 
 ```bash
 docker compose logs -f
 ```
 
-app 컨테이너 로그 확인:
+app 컨테이너 로그 확인
 
 ```bash
 docker compose logs -f app
@@ -509,6 +509,8 @@ User(CUSTOMER) 1 : N Payment
 
 `Order`와 `OrderItem`은 양방향 연관관계로 설계하였습니다.
 
+따라서, 양 측의 참조를 연결해주기 위한 메소드를 만들어서 사용했습니다.
+
 ```java
 public void addOrderItem(OrderItem orderItem) {
     orderItems.add(orderItem);
@@ -518,7 +520,7 @@ public void addOrderItem(OrderItem orderItem) {
 
 ### 설계 이유
 
-양방향 연관관계에서는:
+양방향 연관관계에서는
 
 - 객체 그래프 일관성 유지
 - DB 외래키 정상 저장
@@ -559,7 +561,7 @@ QueryDSL의 `fetch join`을 활용하여 연관 엔티티를 한 번의 조회�
 
 ### 컬렉션 Fetch Join + Pageable 문제 해결
 
-컬렉션(OneToMany, ManyToMany) fetch join과 Pageable을 함께 사용할 경우, 기대하지 않은 페이징이 발생할 수 있는 문제를 해결하기 위해:
+컬렉션(OneToMany, ManyToMany) fetch join과 Pageable을 함께 사용할 경우, 기대하지 않은 페이징이 발생할 수 있는 문제를 해결하기 위해
 
 1. 먼저 ID 목록 조회
 2. 이후 Fetch Join 조회
@@ -725,12 +727,10 @@ PATCH /api/rider/orders/{orderId}/complete
 
 ## 📖 프로젝트 목표
 
-단순 CRUD 구현이 아니라:
-
 - 실제 서비스 흐름
 - 인증 / 인가
 - 상태 기반 비즈니스 로직
 - 객체지향 설계
 - 역할 기반 권한 처리
 
-를 직접 구현하고 학습하는 것을 목표로 진행 중입니다.
+위 사항들을 직접 구현하고 학습하는 것을 목표로 진행 중입니다.
