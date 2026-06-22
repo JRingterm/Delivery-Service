@@ -1,0 +1,16 @@
+<body>
+<h1>Toss 결제 실패</h1>
+<p>결제창에서 실패 응답을 받았습니다.</p>
+<pre id="result"></pre>
+<p><a href="/checkout.html">다시 결제 테스트하기</a></p>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const failInfo = {
+        code: params.get('code'),
+        message: params.get('message'),
+        orderId: params.get('orderId')
+    };
+    document.getElementById('result').textContent = JSON.stringify(failInfo, null, 2);
+</script>
+</body>
+</html>

@@ -33,11 +33,12 @@ management:
       exposure:
         include: health,info
 
-jwt:
+jwt: #Spring의 ${환경변수명:기본값} 문법 사용. 환경변수가 있으면 환경변수를 사용하고, 없으면 기본값을 사용한다.
   secret: ${JWT_SECRET:change-this-jwt-secret-key-for-local-dev-only-32chars+}
   access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:3600000} #1시간
   refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000} #14일
 
 toss:
   payments:
+    client-key: ${TOSS_CLIENT_KEY:test_ck_placeholder}
     secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}

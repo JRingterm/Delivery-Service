@@ -125,6 +125,74 @@ RIDER
 
 ---
 
+### 💳 Toss Payments 테스트 결제 흐름
+
+이 프로젝트는 실제 운영 결제가 아닌 **Toss Payments Sandbox/Test Mode** 기준의 최소 테스트 결제 흐름을 제공하도록 했습니다.
+프론트엔드 애플리케이션을 별도로 만들지 않고, Spring Boot 정적 리소스 HTML만으로 결제창 호출과 백엔드 승인 API 호출을 하도록 했습니다.
+
+### 1) 테스트 키 설정
+
+Toss 테스트 키는 Git에 직접 커밋하지 않고 환경변수로 관리합니다.
+
+```bash
+export TOSS_CLIENT_KEY=test_ck_...
+export TOSS_SECRET_KEY=test_sk_...
+```
+- TOSS_CLIENT_KEY: 브라우저에서 Toss 결제창을 띄울 때 사용하는 공개 가능한 테스트 키.
+- TOSS_SECRET_KEY: 백엔드에서 Toss 승인 API를 호출할 때 사용하는 비밀 키. 프론트에 절대 노출하면 안됨.
+
+application.yml은 아래 환경변수를 읽도록 구성되어 있습니다.
+
+```yml
+toss:
+  payments:
+    client-key: ${TOSS_CLIENT_KEY:test_ck_placeholder}
+    secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}
+```
+
+### 2) 정적 테스트 페이지
+애플리케이션 실행 후 아래 페이지로 접근합니다.
+
+- 결제 요청 페이지: http://localhost:8080/checkout.html
+- 결제 성공 페이지: http://localhost:8080/success.html
+- 결제 실패 페이지: http://localhost:8080/fail.html
+
+### 3) 테스트 흐름
+1. 고객 계정으로 로그인해서 JWT access token을 발급받습니다.
+
+2. 브라우저 개발자 도구 Console에서 토큰을 저장합니다. (success.html에서 accessToken 저장방식은 브라우저 콘솔에서 직접 넣어야 하기 때문.)
+
+```javascript
+localStorage.setItem('accessToken', '발급받은_JWT_ACCESS_TOKEN');
+```
+
+3. http://localhost:8080/checkout.html에 접속합니다.
+
+4. Toss clientKey, 백엔드 주문 ID, 결제 금액을 입력합니다.
+
+5. 결제 버튼을 누르면 Toss 테스트 결제창이 열립니다.
+
+6. 결제가 성공하면 Toss가 success.html로 paymentKey, orderId, amount를 전달합니다.
+
+7. success.html은 localStorage.accessToken을 사용해 백엔드 승인 API를 호출합니다.
+
+```http
+POST /api/payments/toss/confirm
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+
+{
+"paymentKey": "...",
+"orderId": "ORDER-1",
+"amount": 10000
+}
+```
+
+8. 백엔드는 ORDER-1 형식의 주문번호에서 실제 주문 ID 1을 추출하고, 주문 소유자/금액/중복 결제를 검증한 뒤 Toss 승인 API를 호출합니다.
+
+
+---
+
 ### 🔍 검색 / 페이징
 
 - Pageable 기반 페이징 처리
@@ -283,6 +351,7 @@ Docker 환경에서는 `SPRING_PROFILES_ACTIVE=docker` 설정을 통해
 ### ⚙ 실행 방법
 
 #### 1. 애플리케이션 빌드 (코드 변경 시, 빌드 필수)
+build.gradle이 있는 경로에서 입력.
 
 *Linux / Mac*
 
@@ -295,7 +364,7 @@ Docker 환경에서는 `SPRING_PROFILES_ACTIVE=docker` 설정을 통해
 ```powershell
 .\gradlew clean build
 ```
-build.gradle이 있는 경로에서 입력.
+
 
 가끔 테스트 때문에 빌드가 막힐 때는, 테스트 제외하고 빌드.
 ```powershell

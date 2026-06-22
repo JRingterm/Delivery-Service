@@ -154,8 +154,13 @@ public class PaymentService {
     }
 
     private Long parseOrderId(String orderId) {
+        String normalizedOrderId = orderId;
+        if (orderId != null && orderId.startsWith("ORDER-")) {
+            normalizedOrderId = orderId.substring("ORDER-".length());
+        }
+
         try {
-            return Long.valueOf(orderId);
+            return Long.valueOf(normalizedOrderId);
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 주문 ID입니다.");
         }
