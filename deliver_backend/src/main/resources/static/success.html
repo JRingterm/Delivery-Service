@@ -19,10 +19,13 @@
 
 <script>
     async function confirmPayment() {
+        // 결제 성공 시, 토스가 success.html 로 이동시키면서 success.html?paymentKey=abc123&orderId=ORDER-15&amount=12000 이런 값을 붙여준다.
         const params = new URLSearchParams(window.location.search);
+        // 파라미터에서 값 추출하기.
         const paymentKey = params.get('paymentKey');
         const orderId = params.get('orderId');
         const amount = Number(params.get('amount'));
+        // accessToken 읽기. 브라우저 저장소(localStorage)에서 읽어온다.
         const accessToken = localStorage.getItem('accessToken');
         const statusEl = document.getElementById('status');
         const resultEl = document.getElementById('result');
@@ -42,6 +45,7 @@
         }
 
         try {
+            // 승인 API 호출
             statusEl.textContent = '백엔드 승인 API 호출 중...';
             const response = await fetch('/api/payments/toss/confirm', {
                 method: 'POST',

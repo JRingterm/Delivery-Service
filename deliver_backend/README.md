@@ -149,15 +149,28 @@ toss:
     client-key: ${TOSS_CLIENT_KEY:test_ck_placeholder}
     secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}
 ```
+### 2) Docker Compose에서 Toss 키 전달
 
-### 2) 정적 테스트 페이지
+Docker로 Toss 테스트 결제를 실행할 때는 `docker-compose.yml`이 `.env` 파일의 `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY` 값을 app 컨테이너 환경변수로 전달합니다.
+`checkout.html`에서 `test_ck`를 직접 입력해 결제창을 열 수 있어도, 백엔드 승인 API는 반드시 서버 측 `TOSS_SECRET_KEY`가 필요합니다.
+
+```bash
+cp .env.example .env
+# .env 파일에 Toss 테스트 키 입력
+docker compose down
+docker compose up --build -d
+```
+
+`.env`에는 실제 테스트 키를 넣고 Git에 커밋하지 않습니다. 저장소에는 형식만 안내하는 `.env.example`만 포함합니다.
+
+### 3) 정적 테스트 페이지
 애플리케이션 실행 후 아래 페이지로 접근합니다.
 
 - 결제 요청 페이지: http://localhost:8080/checkout.html
 - 결제 성공 페이지: http://localhost:8080/success.html
 - 결제 실패 페이지: http://localhost:8080/fail.html
 
-### 3) 테스트 흐름
+### 4) 테스트 흐름
 1. 고객 계정으로 로그인해서 JWT access token을 발급받습니다.
 
 2. 브라우저 개발자 도구 Console에서 토큰을 저장합니다. (success.html에서 accessToken 저장방식은 브라우저 콘솔에서 직접 넣어야 하기 때문.)
@@ -182,9 +195,9 @@ Authorization: Bearer {accessToken}
 Content-Type: application/json
 
 {
-"paymentKey": "...",
-"orderId": "ORDER-1",
-"amount": 10000
+    "paymentKey": "...",
+    "orderId": "ORDER-1",
+    "amount": 10000
 }
 ```
 

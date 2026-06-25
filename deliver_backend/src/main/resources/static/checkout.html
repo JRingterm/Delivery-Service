@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Toss 테스트 결제</title>
-    <script src="https://js.tosspayments.com/v1/payment"></script>
+    <script src="https://js.tosspayments.com/v1/payment"></script> <!--Toss SDK 로드. 이 코드를 통해 TossPayments() 함수를 쓸 수 있다.-->
     <style>
         body { font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; line-height: 1.6; }
         label { display: block; margin-top: 16px; font-weight: 700; }
@@ -20,6 +20,7 @@
     <strong>Secret Key는 절대 브라우저에 입력하거나 노출하지 마세요.</strong>
 </p>
 
+<!--입력값 받기-->
 <label for="clientKey">Toss Client Key</label>
 <input id="clientKey" type="text" placeholder="test_ck_..." value="test_ck_placeholder">   <!-- value에 Toss 개발자 센터에서 발급받은 test_ck_... 값을 입력하기. -->
 
@@ -51,16 +52,16 @@
         }
 
         const tossPayments = TossPayments(clientKey);
-        const pgOrderId = `ORDER-${orderId}`;
+        const pgOrderId = `ORDER-${orderId}`; // ex) 15 -> ORDER-15. 토스는 문자열 orderID를 선호한다.
         const origin = window.location.origin;
 
-        tossPayments.requestPayment('카드', {
+        tossPayments.requestPayment('카드', {    // 결제창 열기
             amount,
             orderId: pgOrderId,
             orderName: orderName || '배달 주문 테스트 결제',
             customerName: customerName || '테스트 고객',
-            successUrl: `${origin}/success.html`,
-            failUrl: `${origin}/fail.html`
+            successUrl: `${origin}/success.html`,     // 결제 성공 시, success.html
+            failUrl: `${origin}/fail.html`              // 실패 시, fail.html
         });
     }
 </script>

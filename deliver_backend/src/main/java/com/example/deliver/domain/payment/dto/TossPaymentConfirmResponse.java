@@ -1,6 +1,6 @@
 package com.example.deliver.domain.payment.dto;
 
-public record TossPaymentConfirmResponse(
+public record TossPaymentConfirmResponse( //Toss 응답 DTO
         String paymentKey,
         String orderId,
         String method,

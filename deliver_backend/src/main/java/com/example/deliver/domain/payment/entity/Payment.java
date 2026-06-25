@@ -48,11 +48,10 @@ public class Payment {
     @Column(nullable = false, length = 20)
     private PaymentMethod method;
 
-    private String paymentKey;
-
-    private String pgOrderId;
-
-    private LocalDateTime approvedAt;
+    //Toss Payments 적용에 따른 추가 컬럼.
+    private String paymentKey; //PG 결제 고유 식별값.
+    private String pgOrderId; //PG 측 주문 번호.
+    private LocalDateTime approvedAt; //PG 승인 시각.
 
     @Builder
     public Payment(
@@ -61,9 +60,9 @@ public class Payment {
             Integer amount,
             PaymentStatus status,
             PaymentMethod method,
-            String paymentKey,  //PG 결제 고유 식별값.
-            String pgOrderId,   //PG 측 주문 번호.
-            LocalDateTime approvedAt    //PG 승인 시각.
+            String paymentKey,
+            String pgOrderId,
+            LocalDateTime approvedAt
     ) {
         this.order = order;
         this.customer = customer;

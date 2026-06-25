@@ -16,6 +16,7 @@ Thumbs.db
 *.log
 
 # 환경설정
+.env
 #application.yml 이후 mysql 비번 넣을 때 추가하기.
 
 

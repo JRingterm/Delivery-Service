@@ -5,7 +5,7 @@
 <p><a href="/checkout.html">다시 결제 테스트하기</a></p>
 <script>
     const params = new URLSearchParams(window.location.search);
-    const failInfo = {
+    const failInfo = { // 파라미터를 읽어서 값 추출
         code: params.get('code'),
         message: params.get('message'),
         orderId: params.get('orderId')

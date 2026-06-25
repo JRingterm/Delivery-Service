@@ -23,6 +23,10 @@ services:
       JWT_SECRET: change-this-jwt-secret-key-for-docker-env-only-32chars+
       JWT_ACCESS_TOKEN_EXPIRATION_MS: 3600000
       JWT_REFRESH_TOKEN_EXPIRATION_MS: 1209600000
+      #Toss 테스트 키 환경변수 전달
+      TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+
     ports:
       - "8080:8080"
     restart: unless-stopped
